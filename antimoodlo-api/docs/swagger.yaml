@@ -1,0 +1,573 @@
+definitions:
+  Models.CorrectAnswer:
+    properties:
+      id:
+        type: integer
+      option_id:
+        type: integer
+      question_id:
+        type: integer
+    type: object
+  Models.Course:
+    properties:
+      course_id:
+        type: integer
+      title:
+        type: string
+    type: object
+  Models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  Models.MatchPair:
+    properties:
+      id:
+        type: integer
+      left_text:
+        type: string
+      question_id:
+        type: integer
+      right_text:
+        type: string
+    type: object
+  Models.OpenAnswer:
+    properties:
+      answer_text:
+        type: string
+      question_id:
+        type: integer
+    type: object
+  Models.Question:
+    properties:
+      id:
+        type: integer
+      question_text:
+        type: string
+      question_type_id:
+        type: integer
+      quiz_id:
+        type: integer
+    type: object
+  Models.QuestionOption:
+    properties:
+      id:
+        type: integer
+      option_text:
+        type: string
+      question_id:
+        type: integer
+    type: object
+  Models.Quiz:
+    properties:
+      course_id:
+        type: integer
+      duration:
+        type: integer
+      end_date:
+        type: string
+      id:
+        type: integer
+      max_grade:
+        type: integer
+      start_date:
+        type: string
+      state_id:
+        type: integer
+      submited_date:
+        type: string
+      title:
+        type: string
+    type: object
+  Models.User:
+    properties:
+      user_id:
+        type: integer
+      user_login:
+        type: string
+      user_password:
+        type: string
+      user_role:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /courses:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Models.Course'
+            type: array
+      summary: Получить все курсы
+      tags:
+      - Courses
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Курс
+        in: body
+        name: course
+        required: true
+        schema:
+          $ref: '#/definitions/Models.Course'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Models.Course'
+      summary: Создать курс
+      tags:
+      - Courses
+  /courses/{id}:
+    delete:
+      parameters:
+      - description: ID курса
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Удалить курс
+      tags:
+      - Courses
+    get:
+      parameters:
+      - description: ID курса
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.Course'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Получить курс по ID
+      tags:
+      - Courses
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID курса
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Курс
+        in: body
+        name: course
+        required: true
+        schema:
+          $ref: '#/definitions/Models.Course'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.Course'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Обновить курс
+      tags:
+      - Courses
+  /questions/{id}:
+    delete:
+      parameters:
+      - description: ID вопроса
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Удалить вопрос
+      tags:
+      - Questions
+  /questions/{id}/answers/correct:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID вопроса
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Ответ
+        in: body
+        name: answer
+        required: true
+        schema:
+          $ref: '#/definitions/Models.CorrectAnswer'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Models.CorrectAnswer'
+      summary: Добавить правильный ответ
+      tags:
+      - Answers
+  /questions/{id}/answers/match:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID вопроса
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Пара
+        in: body
+        name: pair
+        required: true
+        schema:
+          $ref: '#/definitions/Models.MatchPair'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Models.MatchPair'
+      summary: Добавить пару для сопоставления
+      tags:
+      - Answers
+  /questions/{id}/answers/open:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID вопроса
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Ответ
+        in: body
+        name: answer
+        required: true
+        schema:
+          $ref: '#/definitions/Models.OpenAnswer'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Models.OpenAnswer'
+      summary: Добавить открытый ответ
+      tags:
+      - Answers
+  /questions/{id}/options:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID вопроса
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Вариант
+        in: body
+        name: option
+        required: true
+        schema:
+          $ref: '#/definitions/Models.QuestionOption'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Models.QuestionOption'
+      summary: Добавить вариант ответа
+      tags:
+      - Answers
+  /quizzes:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Models.Quiz'
+            type: array
+      summary: Получить все тесты
+      tags:
+      - Quizzes
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Тест
+        in: body
+        name: quiz
+        required: true
+        schema:
+          $ref: '#/definitions/Models.Quiz'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Models.Quiz'
+      summary: Создать тест
+      tags:
+      - Quizzes
+  /quizzes/{id}:
+    delete:
+      parameters:
+      - description: ID теста
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Удалить тест
+      tags:
+      - Quizzes
+    get:
+      parameters:
+      - description: ID теста
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.Quiz'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Получить тест по ID
+      tags:
+      - Quizzes
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID теста
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Тест
+        in: body
+        name: quiz
+        required: true
+        schema:
+          $ref: '#/definitions/Models.Quiz'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.Quiz'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Обновить тест
+      tags:
+      - Quizzes
+  /quizzes/{id}/questions:
+    get:
+      parameters:
+      - description: ID теста
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Models.Question'
+            type: array
+      summary: Получить вопросы теста
+      tags:
+      - Questions
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID теста
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Вопрос
+        in: body
+        name: question
+        required: true
+        schema:
+          $ref: '#/definitions/Models.Question'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Models.Question'
+      summary: Добавить вопрос в тест
+      tags:
+      - Questions
+  /users:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Models.User'
+            type: array
+      summary: Получить всех пользователей
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Пользователь
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/Models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Models.User'
+      summary: Создать нового пользователя
+      tags:
+      - Users
+  /users/{id}:
+    delete:
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Удалить пользователя
+      tags:
+      - Users
+    get:
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.User'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Получить пользователя по ID
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Пользователь
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/Models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.User'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Обновить пользователя
+      tags:
+      - Users
+swagger: "2.0"

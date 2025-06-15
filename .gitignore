@@ -1,0 +1,40 @@
+# ====== Go ======
+/antimoodlo-api/bin/
+/antimoodlo-api/vendor/
+/antimoodlo-api/.idea/
+*.exe
+*.test
+*.out
+
+# Go модульный кэш
+/go/pkg/
+/go/bin/
+
+# ====== Node.js / React (Frontend) ======
+/Antimoodlo-front/node_modules/
+/Antimoodlo-front/.env
+/Antimoodlo-front/.env.*.local
+/Antimoodlo-front/build/
+/Antimoodlo-front/dist/
+/Antimoodlo-front/.next/
+/Antimoodlo-front/.vite/
+/Antimoodlo-front/.parcel-cache/
+/Antimoodlo-front/yarn.lock
+
+# ====== IntelliJ / WebStorm / GoLand / VS Code ======
+.idea/
+.vscode/
+*.iml
+
+
+# ====== Сборки ======
+/build/
+/out/
+/coverage/
+/*.tar.gz
+*.zip
+
+# ====== ОС системные ======
+ehthumbs.db
+Icon?
+Desktop.ini
