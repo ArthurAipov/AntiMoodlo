@@ -1,104 +1,152 @@
-﻿package Handlers
+package Handlers
 
 import (
+	"antimoodlo/Models"
 	"antimoodlo/db"
-	"antimoodlo/models"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-// POST /questions/:id/options
-
-// @Summary Добавить вариант ответа
-// @Tags Answers
-// @Accept json
-// @Produce json
-// @Param id path int true "ID вопроса"
-// @Param option body Models.QuestionOption true "Вариант"
-// @Success 201 {object} Models.QuestionOption
-// @Router /questions/{id}/options [post]
+// AddQuestionOption godoc
+// @Summary      Добавить вариант ответа
+// @Description  Добавляет один из вариантов ответа для вопроса (Multiple/Single Choice)
+// @Tags         answers
+// @Accept       json
+// @Produce      json
+// @Param        id      path      int                     true  "ID вопроса"
+// @Param        option  body      Models.QuestionOption   true  "Вариант ответа"
+// @Success      201     {object}  Models.QuestionOption
+// @Failure      400     {object}  map[string]interface{}
+// @Failure      404     {object}  map[string]interface{}
+// @Failure      500     {object}  map[string]interface{}
+// @Router       /questions/{id}/options [post]
 func AddQuestionOption(c *gin.Context) {
 	var option Models.QuestionOption
-	questionID := c.Param("id")
+	questionID := parseUint(c.Param("id"))
+
+	if err := DB.DB.First(&Models.Question{}, questionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Question not found"})
+		return
+	}
 
 	if err := c.ShouldBindJSON(&option); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	option.QuestionID = parseUint(questionID)
-	DB.DB.Create(&option)
+	option.QuestionID = questionID
+	if err := DB.DB.Create(&option).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create option"})
+		return
+	}
+
 	c.JSON(http.StatusCreated, option)
 }
 
-// POST /questions/:id/answers/correct
-
-// @Summary Добавить правильный ответ
-// @Tags Answers
-// @Accept json
-// @Produce json
-// @Param id path int true "ID вопроса"
-// @Param answer body Models.CorrectAnswer true "Ответ"
-// @Success 201 {object} Models.CorrectAnswer
-// @Router /questions/{id}/answers/correct [post]
+// AddCorrectAnswer godoc
+// @Summary      Добавить правильный ответ
+// @Description  Добавляет правильный вариант ответа к вопросу (по ID)
+// @Tags         answers
+// @Accept       json
+// @Produce      json
+// @Param        id      path      int                    true  "ID вопроса"
+// @Param        answer  body      Models.CorrectAnswer   true  "Правильный ответ"
+// @Success      201     {object}  Models.CorrectAnswer
+// @Failure      400     {object}  map[string]interface{}
+// @Failure      404     {object}  map[string]interface{}
+// @Failure      500     {object}  map[string]interface{}
+// @Router       /questions/{id}/answers/correct [post]
 func AddCorrectAnswer(c *gin.Context) {
 	var answer Models.CorrectAnswer
-	questionID := c.Param("id")
+	questionID := parseUint(c.Param("id"))
+
+	if err := DB.DB.First(&Models.Question{}, questionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Question not found"})
+		return
+	}
 
 	if err := c.ShouldBindJSON(&answer); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	answer.QuestionID = parseUint(questionID)
-	DB.DB.Create(&answer)
+	answer.QuestionID = questionID
+	if err := DB.DB.Create(&answer).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create correct answer"})
+		return
+	}
+
 	c.JSON(http.StatusCreated, answer)
 }
 
-// POST /questions/:id/answers/open
-
-// @Summary Добавить открытый ответ
-// @Tags Answers
-// @Accept json
-// @Produce json
-// @Param id path int true "ID вопроса"
-// @Param answer body Models.OpenAnswer true "Ответ"
-// @Success 201 {object} Models.OpenAnswer
-// @Router /questions/{id}/answers/open [post]
+// AddOpenAnswer godoc
+// @Summary      Добавить открытый ответ
+// @Description  Добавляет открытый ответ для вопроса с открытой формой
+// @Tags         answers
+// @Accept       json
+// @Produce      json
+// @Param        id      path      int                 true  "ID вопроса"
+// @Param        answer  body      Models.OpenAnswer   true  "Открытый ответ"
+// @Success      201     {object}  Models.OpenAnswer
+// @Failure      400     {object}  map[string]interface{}
+// @Failure      404     {object}  map[string]interface{}
+// @Failure      500     {object}  map[string]interface{}
+// @Router       /questions/{id}/answers/open [post]
 func AddOpenAnswer(c *gin.Context) {
 	var answer Models.OpenAnswer
-	questionID := c.Param("id")
+	questionID := parseUint(c.Param("id"))
+
+	if err := DB.DB.First(&Models.Question{}, questionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Question not found"})
+		return
+	}
 
 	if err := c.ShouldBindJSON(&answer); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	answer.QuestionID = parseUint(questionID)
-	DB.DB.Create(&answer)
+	answer.QuestionID = questionID
+	if err := DB.DB.Create(&answer).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create open answer"})
+		return
+	}
+
 	c.JSON(http.StatusCreated, answer)
 }
 
-// POST /questions/:id/answers/match
-
-// @Summary Добавить пару для сопоставления
-// @Tags Answers
-// @Accept json
-// @Produce json
-// @Param id path int true "ID вопроса"
-// @Param pair body Models.MatchPair true "Пара"
-// @Success 201 {object} Models.MatchPair
-// @Router /questions/{id}/answers/match [post]
+// AddMatchPair godoc
+// @Summary      Добавить пару для сопоставления
+// @Description  Добавляет пару "лево-право" для вопросов типа Match
+// @Tags         answers
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int              true  "ID вопроса"
+// @Param        pair  body      Models.MatchPair  true  "Пара для сопоставления"
+// @Success      201   {object}  Models.MatchPair
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      404   {object}  map[string]interface{}
+// @Failure      500   {object}  map[string]interface{}
+// @Router       /questions/{id}/answers/match [post]
 func AddMatchPair(c *gin.Context) {
 	var pair Models.MatchPair
-	questionID := c.Param("id")
+	questionID := parseUint(c.Param("id"))
+
+	if err := DB.DB.First(&Models.Question{}, questionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Question not found"})
+		return
+	}
 
 	if err := c.ShouldBindJSON(&pair); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	pair.QuestionID = parseUint(questionID)
-	DB.DB.Create(&pair)
+	pair.QuestionID = questionID
+	if err := DB.DB.Create(&pair).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create match pair"})
+		return
+	}
+
 	c.JSON(http.StatusCreated, pair)
 }

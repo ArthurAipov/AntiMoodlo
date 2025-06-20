@@ -15,6 +15,172 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/blocks": {
+            "get": {
+                "description": "Возвращает список всех блоков",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "blocks"
+                ],
+                "summary": "Получить все блоки",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Models.Block"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Создает блок, привязанный к курсу",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "blocks"
+                ],
+                "summary": "Создать новый блок",
+                "parameters": [
+                    {
+                        "description": "Новый блок",
+                        "name": "block",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Models.Block"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/Models.Block"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/blocks/{id}": {
+            "put": {
+                "description": "Обновляет имя блока и ID курса",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "blocks"
+                ],
+                "summary": "Обновить блок",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID блока",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для обновления",
+                        "name": "block",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Models.Block"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Models.Block"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удаляет блок по ID",
+                "tags": [
+                    "blocks"
+                ],
+                "summary": "Удалить блок",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID блока",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/courses": {
             "get": {
                 "produces": [
@@ -175,7 +341,73 @@ const docTemplate = `{
                 }
             }
         },
+        "/questions": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Questions"
+                ],
+                "summary": "Получить все вопросы",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Models.Question"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/questions/{id}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Questions"
+                ],
+                "summary": "Обновить вопрос",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID вопроса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Вопрос",
+                        "name": "question",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Models.Question"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Models.Question"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "produces": [
                     "application/json"
@@ -196,12 +428,19 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
                     }
                 }
             }
         },
         "/questions/{id}/answers/correct": {
             "post": {
+                "description": "Добавляет правильный вариант ответа к вопросу (по ID)",
                 "consumes": [
                     "application/json"
                 ],
@@ -209,7 +448,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Answers"
+                    "answers"
                 ],
                 "summary": "Добавить правильный ответ",
                 "parameters": [
@@ -221,7 +460,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Ответ",
+                        "description": "Правильный ответ",
                         "name": "answer",
                         "in": "body",
                         "required": true,
@@ -236,12 +475,34 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/Models.CorrectAnswer"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     }
                 }
             }
         },
         "/questions/{id}/answers/match": {
             "post": {
+                "description": "Добавляет пару \"лево-право\" для вопросов типа Match",
                 "consumes": [
                     "application/json"
                 ],
@@ -249,7 +510,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Answers"
+                    "answers"
                 ],
                 "summary": "Добавить пару для сопоставления",
                 "parameters": [
@@ -261,7 +522,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Пара",
+                        "description": "Пара для сопоставления",
                         "name": "pair",
                         "in": "body",
                         "required": true,
@@ -276,12 +537,34 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/Models.MatchPair"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     }
                 }
             }
         },
         "/questions/{id}/answers/open": {
             "post": {
+                "description": "Добавляет открытый ответ для вопроса с открытой формой",
                 "consumes": [
                     "application/json"
                 ],
@@ -289,7 +572,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Answers"
+                    "answers"
                 ],
                 "summary": "Добавить открытый ответ",
                 "parameters": [
@@ -301,7 +584,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Ответ",
+                        "description": "Открытый ответ",
                         "name": "answer",
                         "in": "body",
                         "required": true,
@@ -316,12 +599,34 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/Models.OpenAnswer"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     }
                 }
             }
         },
         "/questions/{id}/options": {
             "post": {
+                "description": "Добавляет один из вариантов ответа для вопроса (Multiple/Single Choice)",
                 "consumes": [
                     "application/json"
                 ],
@@ -329,7 +634,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Answers"
+                    "answers"
                 ],
                 "summary": "Добавить вариант ответа",
                 "parameters": [
@@ -341,7 +646,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Вариант",
+                        "description": "Вариант ответа",
                         "name": "option",
                         "in": "body",
                         "required": true,
@@ -355,6 +660,27 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/Models.QuestionOption"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -547,6 +873,12 @@ const docTemplate = `{
                                 "$ref": "#/definitions/Models.Question"
                             }
                         }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
                     }
                 }
             },
@@ -584,6 +916,12 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/Models.Question"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
                         }
                     }
                 }
@@ -637,6 +975,40 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/Models.User"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/login/{login}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Получить пользователя по логину",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Логин пользователя",
+                        "name": "login",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Models.User"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
                         }
                     }
                 }
@@ -751,16 +1123,30 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "Models.Block": {
+            "type": "object",
+            "properties": {
+                "blockid": {
+                    "type": "integer"
+                },
+                "blockname": {
+                    "type": "string"
+                },
+                "courseid": {
+                    "type": "integer"
+                }
+            }
+        },
         "Models.CorrectAnswer": {
             "type": "object",
             "properties": {
                 "id": {
                     "type": "integer"
                 },
-                "option_id": {
+                "optionid": {
                     "type": "integer"
                 },
-                "question_id": {
+                "questionid": {
                     "type": "integer"
                 }
             }
@@ -768,7 +1154,7 @@ const docTemplate = `{
         "Models.Course": {
             "type": "object",
             "properties": {
-                "course_id": {
+                "courseid": {
                     "type": "integer"
                 },
                 "title": {
@@ -790,13 +1176,13 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "left_text": {
+                "lefttext": {
                     "type": "string"
                 },
-                "question_id": {
+                "questionid": {
                     "type": "integer"
                 },
-                "right_text": {
+                "righttext": {
                     "type": "string"
                 }
             }
@@ -804,10 +1190,10 @@ const docTemplate = `{
         "Models.OpenAnswer": {
             "type": "object",
             "properties": {
-                "answer_text": {
+                "answertext": {
                     "type": "string"
                 },
-                "question_id": {
+                "questionid": {
                     "type": "integer"
                 }
             }
@@ -818,13 +1204,13 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "question_text": {
+                "questiontext": {
                     "type": "string"
                 },
-                "question_type_id": {
+                "questiontypeid": {
                     "type": "integer"
                 },
-                "quiz_id": {
+                "quizid": {
                     "type": "integer"
                 }
             }
@@ -835,10 +1221,10 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "option_text": {
+                "optiontext": {
                     "type": "string"
                 },
-                "question_id": {
+                "questionid": {
                     "type": "integer"
                 }
             }
@@ -846,28 +1232,28 @@ const docTemplate = `{
         "Models.Quiz": {
             "type": "object",
             "properties": {
-                "course_id": {
+                "courseid": {
                     "type": "integer"
                 },
                 "duration": {
                     "type": "integer"
                 },
-                "end_date": {
+                "enddate": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
                 },
-                "max_grade": {
+                "maxgrade": {
                     "type": "integer"
                 },
-                "start_date": {
+                "startdate": {
                     "type": "string"
                 },
-                "state_id": {
+                "stateid": {
                     "type": "integer"
                 },
-                "submited_date": {
+                "submiteddate": {
                     "type": "string"
                 },
                 "title": {
@@ -878,16 +1264,16 @@ const docTemplate = `{
         "Models.User": {
             "type": "object",
             "properties": {
-                "user_id": {
+                "userid": {
                     "type": "integer"
                 },
-                "user_login": {
+                "userlogin": {
                     "type": "string"
                 },
-                "user_password": {
+                "userpassword": {
                     "type": "string"
                 },
-                "user_role": {
+                "userrole": {
                     "type": "integer"
                 }
             }

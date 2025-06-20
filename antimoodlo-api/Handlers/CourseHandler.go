@@ -1,8 +1,8 @@
-﻿package Handlers
+package Handlers
 
 import (
+	"antimoodlo/Models"
 	"antimoodlo/db"
-	"antimoodlo/models"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -26,11 +26,14 @@ func GetCourses(c *gin.Context) {
 // @Failure 404 {object} Models.ErrorResponse
 // @Router /courses/{id} [get]
 func GetCourseByID(c *gin.Context) {
+	id := parseUint(c.Param("id"))
 	var course Models.Course
-	if err := DB.DB.First(&course, c.Param("id")).Error; err != nil {
+
+	if err := DB.DB.First(&course, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Course not found"})
 		return
 	}
+
 	c.JSON(http.StatusOK, course)
 }
 
@@ -43,11 +46,17 @@ func GetCourseByID(c *gin.Context) {
 // @Router /courses [post]
 func CreateCourse(c *gin.Context) {
 	var course Models.Course
+
 	if err := c.ShouldBindJSON(&course); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	DB.DB.Create(&course)
+
+	if err := DB.DB.Create(&course).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create course"})
+		return
+	}
+
 	c.JSON(http.StatusCreated, course)
 }
 
@@ -61,8 +70,10 @@ func CreateCourse(c *gin.Context) {
 // @Failure 404 {object} Models.ErrorResponse
 // @Router /courses/{id} [put]
 func UpdateCourse(c *gin.Context) {
+	id := parseUint(c.Param("id"))
 	var course Models.Course
-	if err := DB.DB.First(&course, c.Param("id")).Error; err != nil {
+
+	if err := DB.DB.First(&course, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Course not found"})
 		return
 	}
@@ -74,7 +85,12 @@ func UpdateCourse(c *gin.Context) {
 	}
 
 	course.Title = input.Title
-	DB.DB.Save(&course)
+
+	if err := DB.DB.Save(&course).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update course"})
+		return
+	}
+
 	c.JSON(http.StatusOK, course)
 }
 
@@ -86,11 +102,18 @@ func UpdateCourse(c *gin.Context) {
 // @Failure 404 {object} Models.ErrorResponse
 // @Router /courses/{id} [delete]
 func DeleteCourse(c *gin.Context) {
+	id := parseUint(c.Param("id"))
 	var course Models.Course
-	if err := DB.DB.First(&course, c.Param("id")).Error; err != nil {
+
+	if err := DB.DB.First(&course, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Course not found"})
 		return
 	}
-	DB.DB.Delete(&course)
+
+	if err := DB.DB.Delete(&course).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete course"})
+		return
+	}
+
 	c.Status(http.StatusNoContent)
 }

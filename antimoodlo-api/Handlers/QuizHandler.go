@@ -1,8 +1,8 @@
-﻿package Handlers
+package Handlers
 
 import (
+	"antimoodlo/Models"
 	"antimoodlo/db"
-	"antimoodlo/models"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -26,11 +26,14 @@ func GetQuizzes(c *gin.Context) {
 // @Failure 404 {object} Models.ErrorResponse
 // @Router /quizzes/{id} [get]
 func GetQuizByID(c *gin.Context) {
+	id := parseUint(c.Param("id"))
 	var quiz Models.Quiz
-	if err := DB.DB.First(&quiz, c.Param("id")).Error; err != nil {
+
+	if err := DB.DB.First(&quiz, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Quiz not found"})
 		return
 	}
+
 	c.JSON(http.StatusOK, quiz)
 }
 
@@ -43,11 +46,27 @@ func GetQuizByID(c *gin.Context) {
 // @Router /quizzes [post]
 func CreateQuiz(c *gin.Context) {
 	var quiz Models.Quiz
+
 	if err := c.ShouldBindJSON(&quiz); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	DB.DB.Create(&quiz)
+
+	// Проверка внешних ключей
+	if err := DB.DB.First(&Models.Course{}, quiz.CourseID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Course not found"})
+		return
+	}
+	if err := DB.DB.First(&Models.State{}, quiz.StateID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "State not found"})
+		return
+	}
+
+	if err := DB.DB.Create(&quiz).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create quiz"})
+		return
+	}
+
 	c.JSON(http.StatusCreated, quiz)
 }
 
@@ -61,8 +80,10 @@ func CreateQuiz(c *gin.Context) {
 // @Failure 404 {object} Models.ErrorResponse
 // @Router /quizzes/{id} [put]
 func UpdateQuiz(c *gin.Context) {
+	id := parseUint(c.Param("id"))
 	var quiz Models.Quiz
-	if err := DB.DB.First(&quiz, c.Param("id")).Error; err != nil {
+
+	if err := DB.DB.First(&quiz, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Quiz not found"})
 		return
 	}
@@ -70,6 +91,15 @@ func UpdateQuiz(c *gin.Context) {
 	var input Models.Quiz
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := DB.DB.First(&Models.Course{}, input.CourseID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Course not found"})
+		return
+	}
+	if err := DB.DB.First(&Models.State{}, input.StateID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "State not found"})
 		return
 	}
 
@@ -82,7 +112,11 @@ func UpdateQuiz(c *gin.Context) {
 	quiz.SubmitedDate = input.SubmitedDate
 	quiz.CourseID = input.CourseID
 
-	DB.DB.Save(&quiz)
+	if err := DB.DB.Save(&quiz).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update quiz"})
+		return
+	}
+
 	c.JSON(http.StatusOK, quiz)
 }
 
@@ -94,11 +128,18 @@ func UpdateQuiz(c *gin.Context) {
 // @Failure 404 {object} Models.ErrorResponse
 // @Router /quizzes/{id} [delete]
 func DeleteQuiz(c *gin.Context) {
+	id := parseUint(c.Param("id"))
 	var quiz Models.Quiz
-	if err := DB.DB.First(&quiz, c.Param("id")).Error; err != nil {
+
+	if err := DB.DB.First(&quiz, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Quiz not found"})
 		return
 	}
-	DB.DB.Delete(&quiz)
+
+	if err := DB.DB.Delete(&quiz).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete quiz"})
+		return
+	}
+
 	c.Status(http.StatusNoContent)
 }

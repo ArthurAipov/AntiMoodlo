@@ -1,16 +1,25 @@
 definitions:
+  Models.Block:
+    properties:
+      blockid:
+        type: integer
+      blockname:
+        type: string
+      courseid:
+        type: integer
+    type: object
   Models.CorrectAnswer:
     properties:
       id:
         type: integer
-      option_id:
+      optionid:
         type: integer
-      question_id:
+      questionid:
         type: integer
     type: object
   Models.Course:
     properties:
-      course_id:
+      courseid:
         type: integer
       title:
         type: string
@@ -24,75 +33,187 @@ definitions:
     properties:
       id:
         type: integer
-      left_text:
+      lefttext:
         type: string
-      question_id:
+      questionid:
         type: integer
-      right_text:
+      righttext:
         type: string
     type: object
   Models.OpenAnswer:
     properties:
-      answer_text:
+      answertext:
         type: string
-      question_id:
+      questionid:
         type: integer
     type: object
   Models.Question:
     properties:
       id:
         type: integer
-      question_text:
+      questiontext:
         type: string
-      question_type_id:
+      questiontypeid:
         type: integer
-      quiz_id:
+      quizid:
         type: integer
     type: object
   Models.QuestionOption:
     properties:
       id:
         type: integer
-      option_text:
+      optiontext:
         type: string
-      question_id:
+      questionid:
         type: integer
     type: object
   Models.Quiz:
     properties:
-      course_id:
+      courseid:
         type: integer
       duration:
         type: integer
-      end_date:
+      enddate:
         type: string
       id:
         type: integer
-      max_grade:
+      maxgrade:
         type: integer
-      start_date:
+      startdate:
         type: string
-      state_id:
+      stateid:
         type: integer
-      submited_date:
+      submiteddate:
         type: string
       title:
         type: string
     type: object
   Models.User:
     properties:
-      user_id:
+      userid:
         type: integer
-      user_login:
+      userlogin:
         type: string
-      user_password:
+      userpassword:
         type: string
-      user_role:
+      userrole:
         type: integer
     type: object
 info:
   contact: {}
 paths:
+  /blocks:
+    get:
+      description: Возвращает список всех блоков
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Models.Block'
+            type: array
+      summary: Получить все блоки
+      tags:
+      - blocks
+    post:
+      consumes:
+      - application/json
+      description: Создает блок, привязанный к курсу
+      parameters:
+      - description: Новый блок
+        in: body
+        name: block
+        required: true
+        schema:
+          $ref: '#/definitions/Models.Block'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Models.Block'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Создать новый блок
+      tags:
+      - blocks
+  /blocks/{id}:
+    delete:
+      description: Удаляет блок по ID
+      parameters:
+      - description: ID блока
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Удалить блок
+      tags:
+      - blocks
+    put:
+      consumes:
+      - application/json
+      description: Обновляет имя блока и ID курса
+      parameters:
+      - description: ID блока
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные для обновления
+        in: body
+        name: block
+        required: true
+        schema:
+          $ref: '#/definitions/Models.Block'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.Block'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Обновить блок
+      tags:
+      - blocks
   /courses:
     get:
       produces:
@@ -197,6 +318,20 @@ paths:
       summary: Обновить курс
       tags:
       - Courses
+  /questions:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Models.Question'
+            type: array
+      summary: Получить все вопросы
+      tags:
+      - Questions
   /questions/{id}:
     delete:
       parameters:
@@ -210,11 +345,14 @@ paths:
       responses:
         "204":
           description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
       summary: Удалить вопрос
       tags:
       - Questions
-  /questions/{id}/answers/correct:
-    post:
+    put:
       consumes:
       - application/json
       parameters:
@@ -223,7 +361,38 @@ paths:
         name: id
         required: true
         type: integer
-      - description: Ответ
+      - description: Вопрос
+        in: body
+        name: question
+        required: true
+        schema:
+          $ref: '#/definitions/Models.Question'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.Question'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Обновить вопрос
+      tags:
+      - Questions
+  /questions/{id}/answers/correct:
+    post:
+      consumes:
+      - application/json
+      description: Добавляет правильный вариант ответа к вопросу (по ID)
+      parameters:
+      - description: ID вопроса
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Правильный ответ
         in: body
         name: answer
         required: true
@@ -236,20 +405,36 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/Models.CorrectAnswer'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
       summary: Добавить правильный ответ
       tags:
-      - Answers
+      - answers
   /questions/{id}/answers/match:
     post:
       consumes:
       - application/json
+      description: Добавляет пару "лево-право" для вопросов типа Match
       parameters:
       - description: ID вопроса
         in: path
         name: id
         required: true
         type: integer
-      - description: Пара
+      - description: Пара для сопоставления
         in: body
         name: pair
         required: true
@@ -262,20 +447,36 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/Models.MatchPair'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
       summary: Добавить пару для сопоставления
       tags:
-      - Answers
+      - answers
   /questions/{id}/answers/open:
     post:
       consumes:
       - application/json
+      description: Добавляет открытый ответ для вопроса с открытой формой
       parameters:
       - description: ID вопроса
         in: path
         name: id
         required: true
         type: integer
-      - description: Ответ
+      - description: Открытый ответ
         in: body
         name: answer
         required: true
@@ -288,20 +489,37 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/Models.OpenAnswer'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
       summary: Добавить открытый ответ
       tags:
-      - Answers
+      - answers
   /questions/{id}/options:
     post:
       consumes:
       - application/json
+      description: Добавляет один из вариантов ответа для вопроса (Multiple/Single
+        Choice)
       parameters:
       - description: ID вопроса
         in: path
         name: id
         required: true
         type: integer
-      - description: Вариант
+      - description: Вариант ответа
         in: body
         name: option
         required: true
@@ -314,9 +532,24 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/Models.QuestionOption'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
       summary: Добавить вариант ответа
       tags:
-      - Answers
+      - answers
   /quizzes:
     get:
       produces:
@@ -438,6 +671,10 @@ paths:
             items:
               $ref: '#/definitions/Models.Question'
             type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
       summary: Получить вопросы теста
       tags:
       - Questions
@@ -463,6 +700,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/Models.Question'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
       summary: Добавить вопрос в тест
       tags:
       - Questions
@@ -568,6 +809,28 @@ paths:
           schema:
             $ref: '#/definitions/Models.ErrorResponse'
       summary: Обновить пользователя
+      tags:
+      - Users
+  /users/login/{login}:
+    get:
+      parameters:
+      - description: Логин пользователя
+        in: path
+        name: login
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.User'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Получить пользователя по логину
       tags:
       - Users
 swagger: "2.0"

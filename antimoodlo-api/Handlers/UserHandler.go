@@ -1,8 +1,8 @@
-﻿package Handlers
+package Handlers
 
 import (
+	"antimoodlo/Models"
 	"antimoodlo/db"
-	"antimoodlo/models"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -26,9 +26,26 @@ func GetUsers(c *gin.Context) {
 // @Failure 404 {object} Models.ErrorResponse
 // @Router /users/{id} [get]
 func GetUserByID(c *gin.Context) {
-	id := c.Param("id")
+	id := parseUint(c.Param("id"))
 	var user Models.User
 	if err := DB.DB.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
+// @Summary Получить пользователя по логину
+// @Tags Users
+// @Produce json
+// @Param login path string true "Логин пользователя"
+// @Success 200 {object} Models.User
+// @Failure 404 {object} Models.ErrorResponse
+// @Router /users/login/{login} [get]
+func GetUserByLogin(c *gin.Context) {
+	login := c.Param("login")
+	var user Models.User
+	if err := DB.DB.Where("userlogin = ?", login).First(&user).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
@@ -48,7 +65,18 @@ func CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	DB.DB.Create(&user)
+
+	// Проверка существования роли
+	if err := DB.DB.First(&Models.UserRole{}, user.UserRole).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "UserRole not found"})
+		return
+	}
+
+	if err := DB.DB.Create(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+
 	c.JSON(http.StatusCreated, user)
 }
 
@@ -62,7 +90,7 @@ func CreateUser(c *gin.Context) {
 // @Failure 404 {object} Models.ErrorResponse
 // @Router /users/{id} [put]
 func UpdateUser(c *gin.Context) {
-	id := c.Param("id")
+	id := parseUint(c.Param("id"))
 	var user Models.User
 	if err := DB.DB.First(&user, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
@@ -75,11 +103,21 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
+	// Проверка роли
+	if err := DB.DB.First(&Models.UserRole{}, input.UserRole).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "UserRole not found"})
+		return
+	}
+
 	user.UserLogin = input.UserLogin
 	user.UserPassword = input.UserPassword
 	user.UserRole = input.UserRole
 
-	DB.DB.Save(&user)
+	if err := DB.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		return
+	}
+
 	c.JSON(http.StatusOK, user)
 }
 
@@ -91,12 +129,17 @@ func UpdateUser(c *gin.Context) {
 // @Failure 404 {object} Models.ErrorResponse
 // @Router /users/{id} [delete]
 func DeleteUser(c *gin.Context) {
-	id := c.Param("id")
+	id := parseUint(c.Param("id"))
 	var user Models.User
 	if err := DB.DB.First(&user, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
-	DB.DB.Delete(&user)
+
+	if err := DB.DB.Delete(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
+		return
+	}
+
 	c.Status(http.StatusNoContent)
 }
