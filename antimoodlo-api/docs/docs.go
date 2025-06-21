@@ -438,6 +438,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/questions/{id}/answers": {
+            "get": {
+                "description": "Возвращает все типы ответов (варианты, правильные, открытые, пары)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "answers"
+                ],
+                "summary": "Получить все ответы на вопрос",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID вопроса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/questions/{id}/answers/correct": {
             "post": {
                 "description": "Добавляет правильный вариант ответа к вопросу (по ID)",

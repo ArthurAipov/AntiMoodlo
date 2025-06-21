@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"antimoodlo/Handlers"
@@ -44,6 +44,7 @@ func main() {
 	r.POST("/quizzes/:id/questions", Handlers.CreateQuestion)
 	r.PUT("/questions/:id", Handlers.UpdateQuestion)
 	r.DELETE("/questions/:id", Handlers.DeleteQuestion)
+	r.GET("/questions/:id/answers", Handlers.GetAllAnswers)
 
 	// --- Blocks ---
 	r.GET("/blocks", Handlers.GetBlocks)

@@ -1,352 +1,300 @@
 import React, { useState, useEffect } from "react";
 import yaml from "js-yaml";
-import { FiLogOut, FiUpload, FiEye, FiX, FiCheck, FiPlus, FiTrash2, FiSave } from "react-icons/fi";
+import { FiLogOut, FiUpload, FiEye, FiX, FiCheck, FiPlus, FiTrash2, FiSave, FiCode } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/Api";
+import Timer from "../components/Timer";
+import "../styles/ConfigUploadPage.css";
+import MatchingQuestion from "../components/MatchingQuestions";
 
-// Компонент для подсветки YAML
-const YamlExample = () => {
-  return (
-    <div style={{ 
-      backgroundColor: "#282c34",
-      padding: "20px",
-      borderRadius: "8px",
-      overflowX: "auto",
-      fontSize: "14px",
-      lineHeight: "1.5",
-      fontFamily: "'Fira Code', monospace, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-    }}>
-      <div style={{ color: "#abb2bf" }}>
-        <div style={{ color: "#e06c75" }}>quiz:</div>
-        <div style={{ marginLeft: "20px", color: "#e06c75" }}>title: <span style={{ color: "#98c379" }}>"Пример квиза"</span></div>
-        <div style={{ marginLeft: "20px", color: "#e06c75" }}>description: <span style={{ color: "#98c379" }}>"Тест на общие знания"</span></div>
-        <div style={{ marginLeft: "20px", color: "#e06c75" }}>questions:</div>
-        
-        <div style={{ marginLeft: "40px", color: "#e06c75" }}>- id: <span style={{ color: "#d19a66" }}>1</span></div>
-        <div style={{ marginLeft: "60px", color: "#e06c75" }}>question: <span style={{ color: "#98c379" }}>"Какой язык программирования используется для фронтенда?"</span></div>
-        <div style={{ marginLeft: "60px", color: "#e06c75" }}>type: <span style={{ color: "#98c379" }}>"single"</span></div>
-        <div style={{ marginLeft: "60px", color: "#e06c75" }}>options:</div>
-        <div style={{ marginLeft: "80px", color: "#98c379" }}>- <span style={{ color: "#98c379" }}>"Python"</span></div>
-        <div style={{ marginLeft: "80px", color: "#98c379" }}>- <span style={{ color: "#98c379" }}>"JavaScript"</span></div>
-        <div style={{ marginLeft: "80px", color: "#98c379" }}>- <span style={{ color: "#98c379" }}>"C++"</span></div>
-        <div style={{ marginLeft: "80px", color: "#98c379" }}>- <span style={{ color: "#98c379" }}>"Ruby"</span></div>
-        <div style={{ marginLeft: "60px", color: "#e06c75" }}>correct_option_index: <span style={{ color: "#d19a66" }}>1</span></div>
-        
-        <div style={{ marginLeft: "40px", color: "#e06c75" }}>- id: <span style={{ color: "#d19a66" }}>2</span></div>
-        <div style={{ marginLeft: "60px", color: "#e06c75" }}>question: <span style={{ color: "#98c379" }}>"Выберите все правильные ответы!"</span></div>
-        <div style={{ marginLeft: "60px", color: "#e06c75" }}>type: <span style={{ color: "#98c379" }}>"multiple"</span></div>
-        <div style={{ marginLeft: "60px", color: "#e06c75" }}>options:</div>
-        <div style={{ marginLeft: "80px", color: "#98c379" }}>- <span style={{ color: "#98c379" }}>"HTML"</span></div>
-        <div style={{ marginLeft: "80px", color: "#98c379" }}>- <span style={{ color: "#98c379" }}>"CSS"</span></div>
-        <div style={{ marginLeft: "80px", color: "#98c379" }}>- <span style={{ color: "#98c379" }}>"SQL"</span></div>
-        <div style={{ marginLeft: "80px", color: "#98c379" }}>- <span style={{ color: "#98c379" }}>"JavaScript"</span></div>
-        <div style={{ marginLeft: "60px", color: "#e06c75" }}>correct_option_indexes: <span style={{ color: "#d19a66" }}>[0, 1, 3]</span></div>
-        
-        <div style={{ marginLeft: "40px", color: "#e06c75" }}>- id: <span style={{ color: "#d19a66" }}>3</span></div>
-        <div style={{ marginLeft: "60px", color: "#e06c75" }}>question: <span style={{ color: "#98c379" }}>"Что означает CSS?"</span></div>
-        <div style={{ marginLeft: "60px", color: "#e06c75" }}>type: <span style={{ color: "#98c379" }}>"single"</span></div>
-        <div style={{ marginLeft: "60px", color: "#e06c75" }}>options:</div>
-        <div style={{ marginLeft: "80px", color: "#98c379" }}>- <span style={{ color: "#98c379" }}>"Cascading Style Sheets"</span></div>
-        <div style={{ marginLeft: "80px", color: "#98c379" }}>- <span style={{ color: "#98c379" }}>"Computer Style Sheets"</span></div>
-        <div style={{ marginLeft: "80px", color: "#98c379" }}>- <span style={{ color: "#98c379" }}>"Creative Style System"</span></div>
-        <div style={{ marginLeft: "60px", color: "#e06c75" }}>correct_option_index: <span style={{ color: "#d19a66" }}>0</span></div>
-      </div>
-    </div>
-  );
-};
+//штука чтобы startdate и enddate определялись и работали корректно
+function parseMoscow(iso) {
+  //преобразует строку в Date с учетом московского времени
+  if (iso instanceof Date || typeof iso === "number") {
+    return new Date(iso);
+  }
+  if (typeof iso !== "string") {
+    iso = String(iso);
+  }
+  if (/[+\-]\d{2}:\d{2}$|Z$/.test(iso)) {
+    return new Date(iso);
+  }
+  const [date, time] = iso.split("T");
+  const [Y, M, D] = date.split("-").map(Number);
+  const [h, m, s = 0] = time.split(":").map(Number);
+  return new Date(Date.UTC(Y, M - 1, D, h - 3, m, s));
+}
 
+function getNowMoscow() {
+  const nowLocal = new Date();
+  const offsetLocalMin = nowLocal.getTimezoneOffset();
+  const offsetMoscowMin = 3 * 60;
+  const deltaMs = (offsetMoscowMin + offsetLocalMin) * 60_000;
+  return new Date(nowLocal.getTime() + deltaMs);
+}
+
+//сайдбар пока пустой, сделать рабочим к следующему mvp
 function Sidebar({ width, setWidth }) {
   const { logout } = useAuth();
 
-  const sidebarStyle = {
-    height: "100vh",
-    width: `${width}px`,
-    backgroundColor: "rgba(1, 5, 40, 0.8)",
-    color: "#fff",
-    transition: "width 0.3s ease",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    position: "fixed",
-    left: 0,
-    top: 0,
-    zIndex: 10,
-    boxShadow: "4px 0 8px rgba(0,0,0,0.1)",
-    overflow: "hidden",
-  };
-
-  const sectionStyle = {
-    padding: "20px 10px",
-  };
-
   return (
     <div
-      style={sidebarStyle}
+      className="sidebar"
+      style={{ width: `${width}px` }}
       onMouseEnter={() => setWidth(200)}
       onMouseLeave={() => setWidth(60)}
     >
-      <div style={sectionStyle}>
+      <div className="sidebar-section">
         <SidebarItem icon={<FiUpload />} label="Upload" />
         <SidebarItem icon={<FiEye />} label="Quizzes" />
       </div>
-      <div style={sectionStyle}>
+      <div className="sidebar-section">
         <SidebarItem icon={<FiLogOut />} label="Logout" onClick={logout} />
       </div>
     </div>
   );
 }
 
+//кнопки на сайдбаре
 function SidebarItem({ icon, label, onClick }) {
-  const itemStyle = {
-    display: "flex",
-    alignItems: "center",
-    padding: "10px 10px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    marginBottom: "10px",
-    transition: "background 0.2s ease",
-    color: "#fff",
-  };
-
-  const iconStyle = {
-    fontSize: "20px",
-    marginRight: "12px",
-    minWidth: "24px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#fff",
-  };
-
-  const labelStyle = {
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    opacity: 0,
-    transition: "opacity 0.3s ease",
-  };
-
-  const handleMouseEnter = (e) => {
-    e.currentTarget.style.background = "#010528";
-    const labelSpan = e.currentTarget.querySelector("span");
-    if (labelSpan) labelSpan.style.opacity = 1;
-  };
-
-  const handleMouseLeave = (e) => {
-    e.currentTarget.style.background = "transparent";
-    const labelSpan = e.currentTarget.querySelector("span");
-    if (labelSpan) labelSpan.style.opacity = 0;
-  };
-
   return (
-    <div
-      style={itemStyle}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onClick={onClick}
-    >
-      <div style={iconStyle}>{icon}</div>
-      <span style={labelStyle}>{label}</span>
+      <div
+     className="sidebar-item"
+     onClick={onClick}
+     onMouseEnter={e => e.currentTarget.style.background = "#010528"}
+     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+   >
+    <div className="sidebar-icon">{icon}</div>
+    <span className="sidebar-label" style={{ opacity: 1 }}>{label}</span>
     </div>
   );
 }
 
+//вроде как окно, открывающееся при просмотре превью квиза
 function QuizModal({ visible, onClose, quizConfig }) {
-  if (!visible) return null;
+  if (!visible) return null; //чтобы окно не высвечивалось когда не надо 
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 999,
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: "#fff",
-          padding: "30px",
-          borderRadius: "12px",
-          width: "90%",
-          maxWidth: "700px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          position: "relative",
-          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        }}
-      >
+    <div className="modal-overlay">
+      <div className="modal-content"> 
         <button
           onClick={onClose}
           aria-label="Close modal"
-          style={{
-            position: "absolute",
-            top: "15px",
-            right: "15px",
-            fontWeight: "bold",
-            fontSize: "24px",
-            border: "none",
-            background: "none",
-            cursor: "pointer",
-            color: "#010528",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          className="close-modal"
         >
           <FiX />
         </button>
+        {/*строка ниже нужна чтобы рендерился сам квиз*/}
         <Quiz quizConfig={quizConfig} />
       </div>
     </div>
   );
 }
 
+//Quiz() показывает вопросы квиза и проверяет ответы пользователя, включая таймер, контроль времени и подсчёт правильных ответов.
 function Quiz({ quizConfig }) {
-  const [answers, setAnswers] = useState({});
-  const [result, setResult] = useState(null);
+  //объект, где хранятся все ответы пользователя: answers[q.id] 
+  const [answers, setAnswers]     = useState({});
+  //результат типо "Правильно x ответов из y"
+  const [result, setResult]       = useState(null);
+  //флаг, указывающий на вышедшее время
+  const [isTimeUp, setIsTimeUp]   = useState(false);
 
+  //база квиза
+  const { start, end, title, description, questions, duration } = quizConfig.quiz;
+
+  //время и дедлайн
+  const startDate = parseMoscow(start);
+  const endDate   = parseMoscow(end);
+  const nowMoscow = getNowMoscow();
+  const expired   = nowMoscow > endDate || isTimeUp;
+
+  
+  //compareResult() подсчитывает количество правильных ответов
+ const computeResult = () => {
+  let correctCount = 0;
+
+  questions.forEach(q => {
+    const given = answers[q.id];
+    if (q.type === "single") {
+      if (given === q.correct_option_index) {
+        correctCount++;
+      }
+    } else if (q.type === "matching") {
+      const givenMatching = answers[q.id] || {};
+      const correct = q.correct_matches;
+      const allMatched = Object.keys(correct).every(k => givenMatching[k] === correct[k]);
+      if (allMatched) {
+        correctCount++;
+      }
+    } else {
+      const a = (given || []).slice().sort().toString();
+      const b = q.correct_option_indexes.slice().sort().toString();
+      if (a === b) correctCount++;
+    }
+  });
+
+  setResult(`✅ Правильных: ${correctCount} из ${questions.length}`);
+};
+
+
+  //useEffect() используется для автоматической остановки квиза, если сгорел дедлайн
+  useEffect(() => {
+    if (result) return; //если уже посчитали — не продолжаем
+    const id = setInterval(() => {
+      if (getNowMoscow() > endDate) {
+        setIsTimeUp(true); 
+        computeResult();
+        clearInterval(id);
+      }
+    }, 500); //проверка каждые полсекунды
+    return () => clearInterval(id); 
+  }, [endDate, questions, answers, result]);
+
+  //useEffect() используется для автоматической остановки квиза, если закончилось время на таймере
+  useEffect(() => {
+    if (isTimeUp && !result) {
+      computeResult();
+    }
+  }, [isTimeUp, result]);
+
+  function getNowMoscow() {
+  const nowLocal = new Date();
+  const offsetLocalMin = nowLocal.getTimezoneOffset();     // в минутах (напр. –120 для CEST)
+  const offsetMoscowMin = 3 * 60;                          // Москва = UTC+3
+  // смещение до MSK = (offsetMoscow – (–offsetLocal)) 
+  //                  = offsetMoscow + offsetLocal
+  const deltaMs = (offsetMoscowMin + offsetLocalMin) * 60_000;
+  return new Date(nowLocal.getTime() + deltaMs);
+}
+
+  if (nowMoscow < startDate) {
+  return <>… Доступно с: { startDate.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" }) } </>
+  }
+  
+
+  /*handleChange() используется для обработки выбора ответов 
+  ***********************
+  ничего не делает если квиз закончился из-за isTimeUp()
+  ***********************
+  Если вопрос с множественным выбором (multiple), то добавляет или удаляет optionIndex из списка выбранных.
+  ***********************
+  Если вопрос с одиночным выбором (single), то просто устанавливает номер выбранного варианта. */
   const handleChange = (questionId, optionIndex, isMultiple) => {
-    setAnswers((prev) => {
+    if (isTimeUp || result) return;
+    setAnswers(prev => {
       const current = prev[questionId] || (isMultiple ? [] : null);
-
       if (isMultiple) {
-        if (current.includes(optionIndex)) {
-          return { ...prev, [questionId]: current.filter((i) => i !== optionIndex) };
-        } else {
-          return { ...prev, [questionId]: [...current, optionIndex] };
-        }
-      } else {
-        return { ...prev, [questionId]: optionIndex };
+        return {
+          ...prev,
+          [questionId]: current.includes(optionIndex)
+            ? current.filter(x => x !== optionIndex)
+            : [...current, optionIndex],
+        };
       }
+      return { ...prev, [questionId]: optionIndex };
     });
   };
 
-  const checkAnswers = () => {
-    const questions = quizConfig.quiz.questions;
-    let correct = 0;
-
-    questions.forEach((q) => {
-      const a = answers[q.id];
-      if (q.type === "single" && a === q.correct_option_index) correct++;
-      if (
-        q.type === "multiple" &&
-        Array.isArray(a) &&
-        a.length === q.correct_option_indexes.length &&
-        a.every((val) => q.correct_option_indexes.includes(val))
-      ) {
-        correct++;
-      }
-    });
-
-    setResult(`Правильных ответов: ${correct} из ${questions.length}`);
-  };
-
-  return (
+return (
     <div>
-      <h2 style={{ color: "#010528" }}>{quizConfig.quiz.title}</h2>
-      <p>{quizConfig.quiz.description}</p>
-      {quizConfig.quiz.questions.map((q) => (
-        <div key={q.id} style={{ marginBottom: 20 }}>
-          <strong style={{ color: "#010528" }}>{q.id}. {q.question}</strong>
-          {q.options.map((opt, i) => {
-            const isMultiple = q.type === "multiple";
-            const checked = isMultiple
-              ? (answers[q.id] || []).includes(i)
-              : answers[q.id] === i;
+      <h2>{title}</h2>
+      <p>{description}</p>
 
-            return (
-              <label
-                key={i}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginLeft: 10,
-                  cursor: "pointer",
-                  userSelect: "none",
-                  marginTop: 6,
-                }}
-              >
-                <input
-                  type={isMultiple ? "checkbox" : "radio"}
-                  name={`q-${q.id}`}
-                  checked={checked}
-                  onChange={() => handleChange(q.id, i, isMultiple)}
-                  style={{ display: "none" }}
-                />
-                <CustomCheckbox checked={checked} isRadio={!isMultiple} />
-                <span style={{ marginLeft: 8, color: "#010528" }}>{opt}</span>
-              </label>
-            );
-          })}
-        </div>
-      ))}
-      <button
-        onClick={checkAnswers}
-        style={{
-          padding: "10px 20px",
-          marginTop: 10,
-          backgroundColor: "#010528",
-          color: "#fff",
-          border: "none",
-          borderRadius: "6px",
-          cursor: "pointer",
-          fontWeight: "bold",
-          transition: "background-color 0.3s ease",
-        }}
-        onMouseEnter={e => e.currentTarget.style.backgroundColor = "#0921E6"}
-        onMouseLeave={e => e.currentTarget.style.backgroundColor = "#010528"}
-      >
-        Проверить ответы
-      </button>
-      {result && (
-        <p style={{ fontWeight: "bold", marginTop: 10, color: "#010528" }}>
-          {result}
-        </p>
+      {/* таймер только если ещё нет результата */}
+      {!result && <Timer duration={duration} onTimeUp={() => setIsTimeUp(true)} />}
+
+      {expired && result ? (
+        // a) время вышло и результат уже вычислен
+        <p style={{ fontWeight: "bold", marginTop: 12 }}>{result}</p>
+      ) : (
+        // b) показываем вопросы + кнопку
+        <>
+  {/* просто отображение разных типов вопросов */}
+          {questions.map(q => {
+  if (q.type === "matching") {
+    return (
+      <div key={q.id} style={{ marginBottom: 24 }}>
+        <strong>{q.id}. {q.question}</strong>
+        <MatchingQuestion
+          question={q}
+          answer={answers}
+          setAnswer={setAnswers}
+          disabled={expired}
+        />
+      </div>
+    );
+  }
+
+  const isMultiple = q.type === "multiple";
+  return (
+    <div key={q.id} style={{ marginBottom: 16 }}>
+      <strong>{q.id}. {q.question}</strong>
+      {q.options.map((opt, i) => {
+        const checked = isMultiple
+          ? (answers[q.id] || []).includes(i)
+          : answers[q.id] === i;
+        return (
+          <label
+            key={i}
+            style={{ display: "flex", alignItems: "center", marginTop: 4 }}
+          >
+            <input
+              type={isMultiple ? "checkbox" : "radio"}
+              checked={checked}
+              disabled={expired}
+              onChange={() => handleChange(q.id, i, isMultiple)}
+              style={{ marginRight: 8 }}
+            />
+            <span>{opt}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+})}
+
+        {/*кнопка для проверки ответов*/}
+          <button
+            onClick={() => setIsTimeUp(true)}
+            disabled={expired}
+            style={{ marginTop: 12 }}
+          >
+            Проверить ответы
+          </button>
+        </>
       )}
     </div>
   );
 }
 
+//просто декоративная штука, не трогаем
 function CustomCheckbox({ checked, isRadio }) {
   return (
     <span
-      style={{
-        width: 20,
-        height: 20,
-        borderRadius: isRadio ? "50%" : "4px",
-        border: "2px solid #010528",
-        backgroundColor: checked ? "#010528" : "transparent",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        transition: "background-color 0.3s ease, border-color 0.3s ease",
-        boxSizing: "border-box",
-        position: "relative",
-      }}
+      className={`custom-checkbox ${isRadio ? 'custom-radio' : ''} ${checked ? 'checked' : ''}`}
     >
       {checked && (
         isRadio ? (
-          <span
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: "50%",
-              backgroundColor: "#fff",
-              display: "block",
-            }}
-          />
+          <span className="radio-dot" />
         ) : (
-          <FiCheck color="#fff" size={16} />
+          <FiCheck className="check-icon" />
         )
       )}
     </span>
   );
 }
 
+/*useState(...) хранит всё — от заголовка до YAML-текста
+
+useEffect(...) при монтировании вызывает getQuizzes() и сохраняет результат
+
+handleFileUpload(...) — читает YAML-файл, парсит его и устанавливает текст в yamlText. (Сейчас он не делает setQuizConfig — это надо будет поправить для полной загрузки данных)
+ */
 function ConfigUploadPage() {
+  const [quizStart, setQuizStart] = useState("");
+  const [quizEnd, setQuizEnd] = useState("");
+  const [quizDurationInput, setQuizDurationInput] = useState(60);
   const [quizConfig, setQuizConfig] = useState(null);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -354,17 +302,22 @@ function ConfigUploadPage() {
   const [activeTab, setActiveTab] = useState('upload');
   const [savedQuizzes, setSavedQuizzes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  
   const [quizTitle, setQuizTitle] = useState("");
   const [quizDescription, setQuizDescription] = useState("");
   const [questions, setQuestions] = useState([]);
+  const [yamlText, setYamlText] = useState("");
+  const [yamlError, setYamlError] = useState(null);
+
   const [currentQuestion, setCurrentQuestion] = useState({
     id: 1,
     text: "",
     type: "single",
     options: ["", ""],
     correctOption: null,
-    correctOptions: []
+    correctOptions: [],
+    left_items: [""],
+    right_items: [""],
+    correct_matches: {}
   });
 
   useEffect(() => {
@@ -375,7 +328,6 @@ function ConfigUploadPage() {
         setSavedQuizzes(response.data);
       } catch (err) {
         console.error("Failed to load quizzes:", err);
-        // Fallback to local storage if API fails
         const saved = localStorage.getItem('savedQuizzes');
         if (saved) {
           setSavedQuizzes(JSON.parse(saved));
@@ -394,43 +346,138 @@ function ConfigUploadPage() {
 
     try {
       setIsLoading(true);
-      // Попробуем сначала загрузить через API
-      const response = await api.uploadYamlFile(file);
-      setQuizConfig(response.data);
-      setError(null);
-      setShowModal(true);
-    } catch (apiError) {
-      console.warn("API upload failed, trying local parsing:", apiError);
-      // Если API не работает, парсим локально
-      try {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const parsed = yaml.load(e.target.result);
-            setQuizConfig(parsed);
-            setError(null);
-            setShowModal(true);
-          } catch (parseError) {
-            setError("Ошибка парсинга YAML: " + parseError.message);
-            setQuizConfig(null);
-          }
-        };
-        reader.readAsText(file);
-      } catch (err) {
-        setError("Ошибка загрузки файла: " + err.message);
-        setQuizConfig(null);
-      }
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const text = e.target.result;
+        setYamlText(text);
+        
+        try {
+    const text = await file.text();
+    const parsed = yaml.load(text);
+  } catch (err) {
+    console.error("❌ Ошибка при разборе YAML:", err);
+    alert("Не удалось прочитать YAML-файл");
+  } 
+      };
+      reader.readAsText(file);
+    } catch (err) {
+      setError("Ошибка загрузки файла: " + err.message);
+      setQuizConfig(null);
     } finally {
       setIsLoading(false);
     }
   };
 
+  //Экспортирует YAML-файл на основе текущего текста yamlText.
+  const exportYaml = () => {
+  let filename = "quiz_config";
+
+  try {
+    const parsed = yaml.load(yamlText);
+    if (parsed && parsed.quiz && parsed.quiz.title) {
+      filename = parsed.quiz.title
+        .replace(/\s+/g, "_")         // замена пробелов
+        .replace(/[^\w\-]/g, "");     // убрать всё кроме букв, цифр
+    }
+  } catch (e) {
+    console.warn("Could not parse YAML for filename:", e.message);
+  }
+
+  const blob = new Blob([yamlText], { type: "text/yaml" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${filename}.yaml`;  // ← динамическое имя
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+
+//открывает модальное окно предпросмотра (превью) квиза, если YAML корректный
+  const openPreviewFromYaml = () => {
+    try {
+      const parsed = yaml.load(yamlText);
+      setQuizConfig(parsed);
+      setShowModal(true);
+      setYamlError(null);
+    } catch (e) {
+      setYamlError(`YAML parsing error: ${e.message}`);
+    }
+  };
+
+//загружает YAML в GUI-редактор (в поля формы)
+  const openInGuiCreator = () => {
+    try {
+      const parsed = yaml.load(yamlText);
+      if (!parsed || !parsed.quiz) {
+        throw new Error("Invalid YAML structure: missing 'quiz' root");
+      }
+      
+      setQuizTitle(parsed.quiz.title || "");
+      setQuizDescription(parsed.quiz.description || "");
+      setQuestions(parsed.quiz.questions || []);
+      
+      if (parsed.quiz.duration) {
+        setQuizDurationInput(parsed.quiz.duration);
+      }
+      
+      if (parsed.quiz.start) {
+        const date = new Date(parsed.quiz.start);
+        const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        setQuizStart(offsetDate.toISOString().slice(0, 16));
+      }
+
+      if (parsed.quiz.end) {
+        const date = new Date(parsed.quiz.end);
+        const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        setQuizEnd(offsetDate.toISOString().slice(0, 16));
+      }
+
+      setActiveTab('create');
+      setYamlError(null);
+    } catch (e) {
+      setYamlError(`YAML parsing error: ${e.message}`);
+    }
+  };
+//проверка, можно ли добавить текущий вопрос (все ли поля заполнены корректно)
+const isDisabled = () => {
+  const textEmpty = !currentQuestion.text.trim();
+
+  if (currentQuestion.type === "single") {
+    return textEmpty || currentQuestion.correctOption === null || currentQuestion.options.every(opt => !opt.trim());
+  }
+
+  if (currentQuestion.type === "multiple") {
+    return textEmpty || currentQuestion.correctOptions.length === 0 || currentQuestion.options.every(opt => !opt.trim());
+  }
+
+  if (currentQuestion.type === "matching") {
+    const leftFilled = currentQuestion.left_items?.filter(item => item.trim()).length;
+    const rightFilled = currentQuestion.right_items?.filter(item => item.trim()).length;
+    const matches = currentQuestion.correct_matches || {};
+    const allMatched = leftFilled > 0 && rightFilled > 0 && leftFilled === Object.keys(matches).length;
+    return textEmpty || !allMatched;
+  }
+
+  return true;
+};
+//сохраняет квиз в бд и обновляет список в интерфейсе
   const saveQuiz = async () => {
     const quizData = {
       quizTitle,
       quizDescription,
-      questions
+      questions,
+      duration: quizDurationInput,
+      start: quizStart,
+      end: quizEnd
     };
+
+     if (quizStart && quizEnd && new Date(quizStart) >= new Date(quizEnd)) {
+      alert("Дата окончания должна быть позже даты начала");
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -445,10 +492,7 @@ function ConfigUploadPage() {
 
       const updatedQuizzes = [...savedQuizzes, newQuiz];
       setSavedQuizzes(updatedQuizzes);
-      
-      // Сохраняем и в локальное хранилище на случай проблем с API
       localStorage.setItem('savedQuizzes', JSON.stringify(updatedQuizzes));
-      
       alert('Квиз успешно сохранен!');
     } catch (error) {
       console.error("Error saving quiz:", error);
@@ -458,40 +502,45 @@ function ConfigUploadPage() {
     }
   };
 
-  const loadSavedQuiz = async (quiz) => {
-    try {
-      setIsLoading(true);
-      // Пытаемся загрузить с сервера
-      const response = await api.loadQuizFromServer(quiz.id);
-      const serverQuiz = response.data;
-      
-      setQuizTitle(serverQuiz.title);
-      setQuizDescription(serverQuiz.description);
-      setQuestions(serverQuiz.questions);
-      setActiveTab('create');
-    } catch (error) {
-      console.warn("Failed to load from server, using local data:", error);
-      // Если не получилось с сервера, используем локальные данные
-      setQuizTitle(quiz.title);
-      setQuizDescription(quiz.description);
-      setQuestions(quiz.questions);
-      setActiveTab('create');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+//загружает квиз с сервера и устанавливает все поля формы + вопросы
+//я не уверена рабочая ли это часть, но лучше не трогать
+ const loadSavedQuiz = async (quiz) => {
+  try {
+    setIsLoading(true);
+    const response = await api.loadQuizFromServer(quiz.id);
+    const serverQuiz = response.data;
 
+    // Устанавливаем поля из базы
+    setQuizTitle(serverQuiz.title || "");
+    setQuizDescription(serverQuiz.description || "");
+    setQuizStart(serverQuiz.startdate || "");
+    setQuizEnd(serverQuiz.enddate || "");
+
+    //получаем вопросы
+    const questionsResponse = await api.getQuestions(quiz.id);
+    const serverQuestions = questionsResponse.data;
+
+    setQuestions(serverQuestions || []);
+    setActiveTab('create');
+  } catch (error) {
+    console.warn("Failed to load from server, using local data:", error);
+    setQuizTitle(quiz.title);
+    setQuizDescription(quiz.description);
+    setQuestions(quiz.questions);
+    setActiveTab('create');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+//удаляет квиз с сервера и из локального списка
   const deleteSavedQuiz = async (id, e) => {
     e.stopPropagation();
-    
     if (!window.confirm('Вы уверены, что хотите удалить этот квиз?')) return;
 
     try {
       setIsLoading(true);
-      // Пытаемся удалить с сервера
       await api.deleteQuizFromServer(id);
-      
-      // Удаляем локально в любом случае
       const updatedQuizzes = savedQuizzes.filter(q => q.id !== id);
       setSavedQuizzes(updatedQuizzes);
       localStorage.setItem('savedQuizzes', JSON.stringify(updatedQuizzes));
@@ -503,34 +552,60 @@ function ConfigUploadPage() {
     }
   };
 
+//добавляет текущий вопрос в список questions, очищает форму
   const addQuestion = () => {
-    const newQuestion = {
-      id: questions.length + 1,
-      question: currentQuestion.text,
-      type: currentQuestion.type,
-      options: currentQuestion.options.filter(opt => opt.trim() !== ""),
-      ...(currentQuestion.type === "single" 
-        ? { correct_option_index: currentQuestion.correctOption } 
-        : { correct_option_indexes: currentQuestion.correctOptions })
-    };
-
-    setQuestions([...questions, newQuestion]);
-    setCurrentQuestion({
-      id: questions.length + 2,
-      text: "",
-      type: "single",
-      options: ["", ""],
-      correctOption: null,
-      correctOptions: []
-    });
+  const base = {
+    id: questions.length + 1,
+    question: currentQuestion.text,
+    type: currentQuestion.type
   };
 
+  let newQuestion;
+
+  if (currentQuestion.type === "matching") {
+    newQuestion = {
+      ...base,
+      left_items: currentQuestion.left_items.filter(item => item.trim() !== ""),
+      right_items: currentQuestion.right_items.filter(item => item.trim() !== ""),
+      correct_matches: currentQuestion.correct_matches
+    };
+  } else if (currentQuestion.type === "single") {
+    newQuestion = {
+      ...base,
+      options: currentQuestion.options.filter(opt => opt.trim() !== ""),
+      correct_option_index: currentQuestion.correctOption
+    };
+  } else {
+    newQuestion = {
+      ...base,
+      options: currentQuestion.options.filter(opt => opt.trim() !== ""),
+      correct_option_indexes: currentQuestion.correctOptions
+    };
+  }
+
+  setQuestions([...questions, newQuestion]);
+
+  setCurrentQuestion({
+    id: questions.length + 2,
+    text: "",
+    type: "single",
+    options: ["", ""],
+    correctOption: null,
+    correctOptions: [],
+    left_items: [""],
+    right_items: [""],
+    correct_matches: {}
+  });
+};
+
+//обновляет конкретный вариант ответа в массиве options
   const updateOption = (index, value) => {
     const newOptions = [...currentQuestion.options];
     newOptions[index] = value;
     setCurrentQuestion({...currentQuestion, options: newOptions});
   };
 
+//добавляет окно для ввода нового варианта ответа
   const addOption = () => {
     setCurrentQuestion({
       ...currentQuestion,
@@ -538,6 +613,7 @@ function ConfigUploadPage() {
     });
   };
 
+//удаляет один из вариантов ответа. Также корректирует индекс правильного ответа
   const removeOption = (index) => {
     const newOptions = currentQuestion.options.filter((_, i) => i !== index);
     setCurrentQuestion({
@@ -551,7 +627,7 @@ function ConfigUploadPage() {
         .filter(opt => opt !== index)
     });
   };
-
+//обрабатывает установку/снятие правильных ответов 
   const handleCorrectAnswerChange = (index, isChecked) => {
     if (currentQuestion.type === "single") {
       setCurrentQuestion({...currentQuestion, correctOption: index});
@@ -563,11 +639,15 @@ function ConfigUploadPage() {
     }
   };
 
+//собирает YAML-файл из текущего состояния квиза и запускает его скачивание
   const generateYAML = () => {
     const quiz = {
       quiz: {
         title: quizTitle,
         description: quizDescription,
+        duration: quizDurationInput,
+        start: quizStart,
+        end: quizEnd,
         questions: questions
       }
     };
@@ -578,94 +658,114 @@ function ConfigUploadPage() {
     
     const a = document.createElement("a");
     a.href = url;
-    a.download = `quiz_${Date.now()}.yaml`;
+    let filename = "quiz_config";
+    try {
+    const parsed = yaml.load(yamlText);
+    if (parsed && parsed.quiz && parsed.quiz.title) {
+      filename = parsed.quiz.title
+        .replace(/\s+/g, "_")         // замена пробелов
+        .replace(/[^\w\-]/g, "");     // убрать всё кроме букв, цифр
+    }
+  } catch (e) {
+    console.warn("Could not parse YAML for filename:", e.message);
+  }
+  
+    a.download = `${filename}.yaml`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-
+//Подготавливает и показывает модальное окно предпросмотра на основе текущих данных в GUI
   const previewQuiz = () => {
     setQuizConfig({
       quiz: {
         title: quizTitle,
         description: quizDescription,
+        start: quizStart,
+        end: quizEnd,
+        duration: quizDurationInput,
         questions: questions
       }
     });
+    if (quizStart && quizEnd && new Date(quizStart) >= new Date(quizEnd)) {
+      alert("Дата окончания должна быть позже даты начала");
+      return;
+    }
     setShowModal(true);
   };
 
   const renderGUICreator = () => (
-    <div style={{ 
-      backgroundColor: "#fff",
-      padding: "30px",
-      borderRadius: "12px",
-      boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
-    }}>
-      <h2 style={{ color: "#010528", marginBottom: "20px" }}>Create new quiz</h2>
+    <div className="editor-container">
+      <h2 className="editor-title">Create new quiz</h2>
       
-      <div style={{ marginBottom: "25px" }}>
-        <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>Quiz Title:</label>
+      <div className="editor-field">
+        <label className="editor-label">Quiz Title:</label>
         <input
           type="text"
           value={quizTitle}
           onChange={(e) => setQuizTitle(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px",
-            borderRadius: "6px",
-            border: "1px solid #ddd",
-            fontSize: "16px"
-          }}
+          className="editor-input"
           placeholder="Enter quiz title"
         />
       </div>
 
-      <div style={{ marginBottom: "25px" }}>
-        <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>Description:</label>
+      <div className="editor-field">
+        <label className="editor-label">Description:</label>
         <textarea
           value={quizDescription}
           onChange={(e) => setQuizDescription(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px",
-            borderRadius: "6px",
-            border: "1px solid #ddd",
-            minHeight: "80px",
-            fontSize: "16px"
-          }}
+          className="editor-textarea"
           placeholder="Enter quiz description"
         />
       </div>
 
-      <div style={{ 
-        backgroundColor: "#f8f9fa",
-        padding: "20px",
-        borderRadius: "8px",
-        marginBottom: "25px"
-      }}>
-        <h3 style={{ color: "#010528", marginTop: 0, marginBottom: "15px" }}>Add Question</h3>
+      <div className="editor-field duration-field">
+        <label className="editor-label">Duration (сек):</label>
+        <input
+          type="number"
+          min="1"
+          value={quizDurationInput}
+          onChange={e => setQuizDurationInput(Number(e.target.value))}
+          className="duration-input"
+        />
+      </div>
+
+      <div className="editor-field"> {/*открытие квиза поле ввода*/}Add commentMore actions
+        <label className="editor-label">Start Date & Time (МСК):</label>
+        <input
+          type="datetime-local"
+          value={quizStart}
+          onChange={(e) => setQuizStart(e.target.value)}
+          className="editor-input"
+        />
+      </div>
+
+      <div className="editor-field"> {/*закрытие квиза поле ввода*/}
+        <label className="editor-label">End Date & Time (МСК):</label>
+        <input
+          type="datetime-local"
+          value={quizEnd}
+          onChange={(e) => setQuizEnd(e.target.value)}
+          className="editor-input"
+        />
+      </div>
+      <div className="question-container">
+        <h3 className="section-title">Add Question</h3>
         
-        <div style={{ marginBottom: "15px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>Question Text:</label>
+        <div className="editor-field">
+          <label className="editor-label">Question Text:</label>
           <input
             type="text"
             value={currentQuestion.text}
             onChange={(e) => setCurrentQuestion({...currentQuestion, text: e.target.value})}
-            style={{
-              width: "100%",
-              padding: "10px",
-              borderRadius: "6px",
-              border: "1px solid #ddd",
-              fontSize: "16px"
-            }}
+            className="editor-input"
             placeholder="Enter your question"
           />
         </div>
 
-        <div style={{ marginBottom: "15px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>Question Type:</label>
+        <div className="editor-field">
+          <label className="editor-label">Question Type:</label>
           <select
             value={currentQuestion.type}
             onChange={(e) => setCurrentQuestion({
@@ -674,111 +774,138 @@ function ConfigUploadPage() {
               correctOption: null,
               correctOptions: []
             })}
-            style={{
-              padding: "10px",
-              borderRadius: "6px",
-              border: "1px solid #ddd",
-              width: "100%",
-              fontSize: "16px"
-            }}
+            className="editor-select"
           >
             <option value="single">Single correct answer</option>
             <option value="multiple">Multiple correct answers</option>
+            <option value="matching">Matching correct answer</option>
           </select>
         </div>
+        {currentQuestion.type === "matching" && ( //Я ХЗ ТУТ ЛИ ЭТО ДОЛЖНО НАХОДИТСЯ
+  <div>
+    {/* Left column */}
+    <div className="editor-field">
+      <label className="editor-label">Left Column:</label>
+      {currentQuestion.left_items.map((item, index) => (
+        <input
+          key={index}
+          type="text"
+          value={item}
+          onChange={e => {
+            const newLeft = [...currentQuestion.left_items];
+            newLeft[index] = e.target.value;
+            setCurrentQuestion({...currentQuestion, left_items: newLeft});
+          }}
+          placeholder={`Left ${index + 1}`}
+          className="option-input"
+        />
+      ))}
+      <button onClick={() =>
+        setCurrentQuestion({...currentQuestion, left_items: [...currentQuestion.left_items, ""]})
+      } className="add-option-btn">
+        <FiPlus size={16} /> Add Left
+      </button>
+    </div>
 
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>Options:</label>
-          {currentQuestion.options.map((option, index) => (
-            <div key={index} style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              marginBottom: "10px",
-              gap: "10px"
-            }}>
-              <input
-                type={currentQuestion.type === "single" ? "radio" : "checkbox"}
-                name={`correct-answer-${currentQuestion.id}`}
-                checked={
-                  currentQuestion.type === "single" 
-                    ? currentQuestion.correctOption === index 
-                    : currentQuestion.correctOptions.includes(index)
+    {/* Right column */}
+    <div className="editor-field">
+      <label className="editor-label">Right Column:</label>
+      {currentQuestion.right_items.map((item, index) => (
+        <input
+          key={index}
+          type="text"
+          value={item}
+          onChange={e => {
+            const newRight = [...currentQuestion.right_items];
+            newRight[index] = e.target.value;
+            setCurrentQuestion({...currentQuestion, right_items: newRight});
+          }}
+          placeholder={`Right ${index + 1}`}
+          className="option-input"
+        />
+      ))}
+      <button onClick={() =>
+        setCurrentQuestion({...currentQuestion, right_items: [...currentQuestion.right_items, ""]})
+      } className="add-option-btn">
+        <FiPlus size={16} /> Add Right
+      </button>
+    </div>
+
+    {/* Correct matches */}
+    <div className="editor-field">
+      <label className="editor-label">Correct Matches:</label>
+      {currentQuestion.left_items.map((left, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
+          <span style={{ width: 80 }}>{left || `Left ${i + 1}`}</span>
+          <select
+            value={currentQuestion.correct_matches[left] || ""}
+            onChange={e => {
+              setCurrentQuestion({
+                ...currentQuestion,
+                correct_matches: {
+                  ...currentQuestion.correct_matches,
+                  [left]: e.target.value
                 }
-                onChange={(e) => handleCorrectAnswerChange(index, e.target.checked)}
-                style={{ transform: "scale(1.2)" }}
-              />
-              <input
-                type="text"
-                value={option}
-                onChange={(e) => updateOption(index, e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: "8px 10px",
-                  borderRadius: "6px",
-                  border: "1px solid #ddd",
-                  fontSize: "16px"
-                }}
-                placeholder={`Option ${index + 1}`}
-              />
-              <button 
-                onClick={() => removeOption(index)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#ff4444",
-                  fontSize: "18px",
-                  display: "flex",
-                  alignItems: "center"
-                }}
-              >
-                <FiTrash2 />
-              </button>
-            </div>
-          ))}
-          <button
-            onClick={addOption}
-            style={{
-              padding: "8px 15px",
-              backgroundColor: "#f0f0f0",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              fontSize: "15px",
-              marginTop: "10px"
+              });
             }}
+            className="editor-select"
           >
-            <FiPlus size={16} /> Add Option
-          </button>
+            <option value="">Select match</option>
+            {currentQuestion.right_items.map((right, j) => (
+              <option key={j} value={right}>{right}</option>
+            ))}
+          </select>
         </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{(currentQuestion.type === "single" || currentQuestion.type === "multiple") && (
+  <div className="editor-field">
+    <label className="editor-label">Options:</label>
+    {currentQuestion.options.map((option, index) => (
+      <div key={index} className="option-row">
+        <input
+          type={currentQuestion.type === "single" ? "radio" : "checkbox"}
+          name={`correct-answer-${currentQuestion.id}`}
+          checked={
+            currentQuestion.type === "single"
+              ? currentQuestion.correctOption === index
+              : currentQuestion.correctOptions.includes(index)
+          }
+          onChange={(e) => handleCorrectAnswerChange(index, e.target.checked)}
+          className="correct-answer-input"
+        />
+        <input
+          type="text"
+          value={option}
+          onChange={(e) => updateOption(index, e.target.value)}
+          className="option-input"
+          placeholder={`Option ${index + 1}`}
+        />
+        <button 
+          onClick={() => removeOption(index)}
+          className="remove-option-btn"
+        >
+          <FiTrash2 />
+        </button>
+      </div>
+    ))}
+    <button
+      onClick={addOption}
+      className="add-option-btn"
+    >
+      <FiPlus size={16} /> Add Option
+    </button>
+  </div>
+)}
+
 
         <button
           onClick={addQuestion}
-          disabled={!currentQuestion.text || 
-                   currentQuestion.options.every(opt => !opt.trim()) ||
-                   (currentQuestion.type === "single" && currentQuestion.correctOption === null) ||
-                   (currentQuestion.type === "multiple" && currentQuestion.correctOptions.length === 0)}
-          style={{
-            padding: "12px 24px",
-            backgroundColor: "#010528",
-            color: "#fff",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontSize: "16px",
-            fontWeight: "500",
-            opacity: (!currentQuestion.text || 
-                     currentQuestion.options.every(opt => !opt.trim()) ||
-                     (currentQuestion.type === "single" && currentQuestion.correctOption === null) ||
-                     (currentQuestion.type === "multiple" && currentQuestion.correctOptions.length === 0)) 
-                     ? 0.5 : 1,
-            transition: "opacity 0.3s, background-color 0.3s"
-          }}
-          onMouseEnter={e => e.currentTarget.style.backgroundColor = "#0921E6"}
-          onMouseLeave={e => e.currentTarget.style.backgroundColor = "#010528"}
+          disabled={isDisabled()}
+          className="add-question-btn"
         >
           Add Question
         </button>
@@ -786,36 +913,24 @@ function ConfigUploadPage() {
 
       {questions.length > 0 && (
         <div>
-          <h3 style={{ color: "#010528", marginBottom: "15px" }}>Added Questions ({questions.length})</h3>
-          <div style={{ 
-            backgroundColor: "#f8f9fa", 
-            padding: "15px", 
-            borderRadius: "8px",
-            marginBottom: "25px"
-          }}>
+          <h3 className="section-title">Added Questions ({questions.length})</h3>
+          <div className="questions-list">
             {questions.map((q, i) => (
-              <div key={i} style={{ 
-                padding: "12px", 
-                borderBottom: i < questions.length - 1 ? "1px solid #ddd" : "none",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center"
-              }}>
+              <div key={i} className="question-item">
                 <div>
-                  <div style={{ fontWeight: "500", marginBottom: "5px" }}>{q.id}. {q.question}</div>
-                  <div style={{ fontSize: "14px", color: "#666" }}>
-                    Type: {q.type === "single" ? "Single answer" : "Multiple answers"}
+                  <div className="question-summary">{q.id}. {q.question}</div>
+                  <div className="question-type">
+                    Type: {q.type === "single"
+                            ? "Single answer"
+                            : q.type === "matching"
+                              ? "Matching answers"
+                              : "Multiple answers"}
+
                   </div>
                 </div>
                 <button 
                   onClick={() => setQuestions(questions.filter((_, idx) => idx !== i))}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "#ff4444",
-                    fontSize: "18px"
-                  }}
+                  className="remove-question-btn"
                 >
                   <FiTrash2 />
                 </button>
@@ -823,71 +938,24 @@ function ConfigUploadPage() {
             ))}
           </div>
 
-          <div style={{ display: "flex", gap: "15px", flexWrap: 'wrap' }}>
+          <div className="actions-container">
             <button
               onClick={previewQuiz}
-              style={{
-                padding: "12px 24px",
-                backgroundColor: "#0921E6",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontSize: "16px",
-                fontWeight: "500",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                transition: "background-color 0.3s"
-              }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = "#010528"}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = "#0921E6"}
+              className="action-btn preview-btn"
             >
               <FiEye /> Preview Quiz
             </button>
             <button
               onClick={generateYAML}
               disabled={!quizTitle || questions.length === 0}
-              style={{
-                padding: "12px 24px",
-                backgroundColor: "#28a745",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontSize: "16px",
-                fontWeight: "500",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                opacity: (!quizTitle || questions.length === 0) ? 0.5 : 1,
-                transition: "opacity 0.3s, background-color 0.3s"
-              }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = "#218838"}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = "#28a745"}
+              className="action-btn export-btn"
             >
               <FiUpload /> Export as YAML
             </button>
             <button
               onClick={saveQuiz}
               disabled={!quizTitle || questions.length === 0 || isLoading}
-              style={{
-                padding: "12px 24px",
-                backgroundColor: "#6f42c1",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontSize: "16px",
-                fontWeight: "500",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                opacity: (!quizTitle || questions.length === 0 || isLoading) ? 0.5 : 1,
-                transition: "opacity 0.3s, background-color 0.3s"
-              }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = "#5a3d9f"}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = "#6f42c1"}
+              className="action-btn save-btn"
             >
               {isLoading ? "Saving..." : <><FiSave /> Save Quiz</>}
             </button>
@@ -897,90 +965,150 @@ function ConfigUploadPage() {
     </div>
   );
 
+  // 1) Функция для загрузки полного превью из БД
+const handlePreviewSavedQuiz = async (quizMeta) => {
+  setIsLoading(true);
+  try {
+    // a) метаданные квиза
+    const { data: quizData } = await api.getQuiz(quizMeta.id);
+
+    // b) вопросы
+    const { data: questionsList } = await api.getQuestions(quizMeta.id);
+
+    // c) для каждого вопроса — все ответы
+    const questions = await Promise.all(
+      questionsList.map(async q => {
+        const { data: ans } = await api.getAllAnswers(q.id);
+        const type = q.questiontypeid === 1
+          ? 'single'
+          : q.questiontypeid === 2
+            ? 'multiple'
+            : 'matching';
+
+        if (type === 'single') {
+          // варианты + индекс правильного
+          const options = ans.options.map(o => o.optiontext);
+          const correct = ans.correctAnswers[0]?.optionid;
+          return {
+            id: q.id,
+            question: q.questiontext,
+            type,
+            options,
+            correct_option_index: correct != null
+              ? options.findIndex((_, i) => ans.correctAnswers[0].optionid === ans.options?.[i]?.id)
+              : undefined
+          };
+        }
+
+        if (type === 'multiple') {
+          const options = ans.options.map(o => o.optiontext);
+          const correctIndexes = ans.correctAnswers.map(ca =>
+            options.findIndex((_, i) => ca.optionid === ans.options[i].id)
+          );
+          return {
+            id: q.id,
+            question: q.questiontext,
+            type,
+            options,
+            correct_option_indexes: correctIndexes
+          };
+        }
+
+        // matching
+        const left_items  = ans.options.filter(o => !ans.matchPairs.find(mp => mp.righttext === o.optiontext)).map(o => o.optiontext);
+        const right_items = ans.options.filter(o => !left_items.includes(o.optiontext)).map(o => o.optiontext);
+        const correct_matches = Object.fromEntries(
+          ans.matchPairs.map(mp => [mp.lefttext, mp.righttext])
+        );
+        return {
+          id: q.id,
+          question: q.questiontext,
+          type,
+          left_items,
+          right_items,
+          correct_matches
+        };
+      })
+    );
+
+    // d) Собираем объект для модалки и открываем
+    setQuizConfig({
+      quiz: {
+        title:       quizData.title,
+        description: quizData.description,
+        start:       quizData.startdate,
+        end:         quizData.enddate,
+        duration:    quizData.duration,
+        questions
+      }
+    });
+    setShowModal(true);
+
+  } catch (err) {
+    console.error("Ошибка при загрузке превью квиза:", err);
+    alert("Не удалось загрузить превью теста из базы");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
   const renderSavedQuizzes = () => (
-    <div style={{ 
-      backgroundColor: "#fff",
-      padding: "30px",
-      borderRadius: "12px",
-      boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
-    }}>
-      <h2 style={{ color: "#010528", marginBottom: "20px" }}>Saved Quizzes</h2>
-      
-      {isLoading ? (
-        <p style={{ color: "#666", textAlign: "center" }}>Loading quizzes...</p>
-      ) : savedQuizzes.length === 0 ? (
-        <p style={{ color: "#666", textAlign: "center" }}>No saved quizzes yet</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-          {savedQuizzes.map((quiz) => (
-            <div 
-              key={quiz.id}
-              onClick={() => loadSavedQuiz(quiz)}
-              style={{
-                padding: "15px",
-                border: "1px solid #ddd",
-                borderRadius: "8px",
-                cursor: "pointer",
-                transition: "background-color 0.3s",
-                ':hover': {
-                  backgroundColor: "#f8f9fa"
-                }
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div>
-                  <h3 style={{ margin: 0, color: "#010528" }}>{quiz.title}</h3>
-                  <p style={{ margin: "5px 0 0", color: "#666" }}>{quiz.description}</p>
-                  <p style={{ margin: "5px 0 0", fontSize: "14px", color: "#999" }}>
-                    {new Date(quiz.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                <button 
+  <div className="saved-quizzes-container">
+    <h2 className="section-title">Saved Quizzes</h2>
+
+    {isLoading ? (
+      <p className="loading-text">Loading quizzes...</p>
+    ) : savedQuizzes.length === 0 ? (
+      <p className="no-quizzes-text">No saved quizzes yet</p>
+    ) : (
+      <div className="quizzes-list">
+        {savedQuizzes.map((quiz) => (
+          <div
+            key={quiz.id}
+            onClick={() => loadSavedQuiz(quiz)}
+            className="quiz-item"
+          >
+            <div className="quiz-header">
+              <div>
+                <h3 className="quiz-title">{quiz.title}</h3>
+                <p className="quiz-description">{quiz.description}</p>
+                <p className="quiz-date">
+                  {new Date(quiz.createdAt).toLocaleString()}
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                <button
+                 onClick={e => {
+                e.stopPropagation();
+                handlePreviewSavedQuiz(quiz);
+                }}
+                className="preview-quiz-btn"
+                >
+                <FiEye />
+                </button>
+
+                <button
                   onClick={(e) => deleteSavedQuiz(quiz.id, e)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "#ff4444",
-                    fontSize: "18px",
-                    display: "flex",
-                    alignItems: "center"
-                  }}
+                  className="delete-quiz-btn"
                 >
                   <FiTrash2 />
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
 
   const renderUploadTab = () => (
-    <div style={{ 
-      backgroundColor: "#fff",
-      padding: "30px",
-      borderRadius: "12px",
-      boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
-    }}>
-      <h2 style={{ color: "#010528", marginBottom: "20px" }}>Upload Quiz Config</h2>
+    <div className="upload-container">
+      <h2 className="section-title">Upload Quiz Config</h2>
       <label
         htmlFor="config-upload"
-        style={{
-          display: "inline-block",
-          padding: "12px 24px",
-          backgroundColor: "#010528",
-          color: "#fff",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontWeight: "500",
-          fontSize: "16px",
-          transition: "background-color 0.3s",
-          marginBottom: "20px"
-        }}
-        onMouseEnter={e => e.currentTarget.style.backgroundColor = "#0921E6"}
-        onMouseLeave={e => e.currentTarget.style.backgroundColor = "#010528"}
+        className="upload-label"
       >
         <FiUpload style={{ marginRight: "8px" }} /> Select YAML File
         <input
@@ -993,109 +1121,123 @@ function ConfigUploadPage() {
         />
       </label>
 
-      {isLoading && <p style={{ color: "#666" }}>Uploading file...</p>}
+      {isLoading && <p className="loading-text">Uploading file...</p>}
 
       {error && (
-        <div style={{ 
-          backgroundColor: "#f8d7da",
-          color: "#721c24",
-          padding: "15px",
-          borderRadius: "6px",
-          marginBottom: "20px"
-        }}>
+        <div className="error-message">
           {error}
         </div>
       )}
 
-      <div style={{ marginTop: "30px" }}>
-        <h3 style={{ color: "#010528", marginBottom: "15px" }}>Example YAML Structure</h3>
-        <YamlExample />
+      <div className="yaml-editor-container">
+        <h3 className="editor-titleg">YAML Editor</h3>
+        <textarea
+          value={yamlText}
+          onChange={(e) => setYamlText(e.target.value)}
+          className="yaml-textarea" //штука чтоб высвечивалась в конструкторе yaml файла
+          placeholder="QUIZ EXAMPLE:
+quiz:
+  title: Example quiz (Please write the title on English)
+  duration: 120
+  start: 2025-06-19T21:00
+  end: 2025-06-30T23:53
+  questions:
+    - id: 1
+      question: How are you?
+      type: single
+      options:
+        - Fine
+        - Bad
+      correct_option_index: 0
+    - id: 2
+      question: Why?
+      type: multiple
+      options:
+        - Because of beautiful day
+        - Everything is bad in my life
+        - Woke up with this mood
+      correct_option_indexes:
+        - 0
+        - 2
+      - id: 3
+        question: Match next things right
+        type: matching
+        left_items:
+          - Plant
+          - Raise
+          - Build
+        right_items:
+          - a house
+          - a child
+          - a tree
+        correct_matches:
+          Plant: a tree
+          Raise: a child
+          Build: a house
+"
+          rows={20}
+        />
+        
+        {yamlError && (
+          <div className="error-message">
+            {yamlError}
+          </div>
+        )}
+        
+        <div className="editor-buttons">
+          <button
+            onClick={exportYaml}
+            className="action-btn"
+            disabled={!yamlText.trim()}
+          >
+            <FiUpload /> Export YAML
+          </button>
+          <button
+            onClick={openPreviewFromYaml}
+            className="action-btn"
+            disabled={!yamlText.trim()}
+          >
+            <FiEye /> Open Preview
+          </button>
+          <button
+            onClick={openInGuiCreator}
+            className="action-btn"
+            disabled={!yamlText.trim()}
+          >
+            <FiCode /> Open in GUI-Creator
+          </button>
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div style={{ display: "flex", height: "100vh", backgroundColor: "#f5f5f5" }}>
+    <div className="quiz-creator-container">
       <Sidebar width={sidebarWidth} setWidth={setSidebarWidth} />
-      <div
-        style={{
-          padding: "40px",
-          flexGrow: 1,
-          marginLeft: sidebarWidth,
-          transition: "margin-left 0.3s ease",
-          backgroundColor: "#f5f5f5",
-          overflowY: "auto",
-          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        }}
-      >
-        <div style={{ 
-          display: "flex", 
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "30px"
-        }}>
-          <h1 style={{ color: "#010528", margin: 0 }}>Quiz Creator</h1>
+      
+      <div className="main-content" style={{ marginLeft: sidebarWidth }}>
+        <div className="header-container">
+          <h1 className="page-title">Quiz Creator</h1>
         </div>
 
-        <div style={{ 
-          display: "flex", 
-          gap: "20px",
-          marginBottom: "30px"
-        }}>
+        <div className="tab-container">
           <button
+            className={`tab-button ${activeTab === 'upload' ? 'active' : 'inactive'}`}
             onClick={() => setActiveTab('upload')}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: activeTab === 'upload' ? "#010528" : "#e9ecef",
-              color: activeTab === 'upload' ? "#fff" : "#010528",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "500",
-              transition: "all 0.3s ease",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px"
-            }}
           >
             <FiUpload /> Upload Config
           </button>
+          
           <button
+            className={`tab-button ${activeTab === 'create' ? 'active' : 'inactive'}`}
             onClick={() => setActiveTab('create')}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: activeTab === 'create' ? "#010528" : "#e9ecef",
-              color: activeTab === 'create' ? "#fff" : "#010528",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "500",
-              transition: "all 0.3s ease",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px"
-            }}
           >
             <FiPlus /> Create New
           </button>
+          
           <button
+            className={`tab-button ${activeTab === 'saved' ? 'active' : 'inactive'}`}
             onClick={() => setActiveTab('saved')}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: activeTab === 'saved' ? "#010528" : "#e9ecef",
-              color: activeTab === 'saved' ? "#fff" : "#010528",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "500",
-              transition: "all 0.3s ease",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px"
-            }}
           >
             <FiSave /> Saved Quizzes
           </button>

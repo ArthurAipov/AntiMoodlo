@@ -381,6 +381,31 @@ paths:
       summary: Обновить вопрос
       tags:
       - Questions
+  /questions/{id}/answers:
+    get:
+      description: Возвращает все типы ответов (варианты, правильные, открытые, пары)
+      parameters:
+      - description: ID вопроса
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Получить все ответы на вопрос
+      tags:
+      - answers
   /questions/{id}/answers/correct:
     post:
       consumes:

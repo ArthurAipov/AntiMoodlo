@@ -84,3 +84,10 @@ type MatchPair struct {
 func (MatchPair) TableName() string {
 	return "matchpairs"
 }
+
+type AllAnswersResponse struct {
+	Options        []QuestionOption `json:"options"`
+	CorrectAnswers []CorrectAnswer  `json:"correctAnswers"`
+	OpenAnswers    []OpenAnswer     `json:"openAnswers"`
+	MatchPairs     []MatchPair      `json:"matchPairs"`
+}

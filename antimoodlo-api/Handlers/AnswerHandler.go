@@ -1,4 +1,4 @@
-package Handlers
+﻿package Handlers
 
 import (
 	"antimoodlo/Models"
@@ -149,4 +149,54 @@ func AddMatchPair(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, pair)
+}
+
+// GetAllAnswers godoc
+// @Summary      Получить все ответы на вопрос
+// @Description  Возвращает все типы ответов (варианты, правильные, открытые, пары)
+// @Tags         answers
+// @Produce      json
+// @Param        id   path      int  true  "ID вопроса"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /questions/{id}/answers [get]
+func GetAllAnswers(c *gin.Context) {
+	questionID := parseUint(c.Param("id"))
+
+	if err := DB.DB.First(&Models.Question{}, questionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Question not found"})
+		return
+	}
+
+	var (
+		options []Models.QuestionOption
+		correct []Models.CorrectAnswer
+		open    []Models.OpenAnswer
+		match   []Models.MatchPair
+	)
+
+	DB.DB.Where("questionid = ?", questionID).Find(&options)
+	DB.DB.Where("questionid = ?", questionID).Find(&correct)
+	DB.DB.Where("questionid = ?", questionID).Find(&open)
+	DB.DB.Where("questionid = ?", questionID).Find(&match)
+
+	if options == nil {
+		options = []Models.QuestionOption{}
+	}
+	if correct == nil {
+		correct = []Models.CorrectAnswer{}
+	}
+	if open == nil {
+		open = []Models.OpenAnswer{}
+	}
+	if match == nil {
+		match = []Models.MatchPair{}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"options":        options,
+		"correctAnswers": correct,
+		"openAnswers":    open,
+		"matchPairs":     match,
+	})
 }
