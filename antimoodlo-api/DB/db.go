@@ -1,4 +1,4 @@
-﻿package DB
+package DB
 
 import (
 	"antimoodlo/Models"
@@ -39,5 +39,6 @@ func InitDB() {
 		&Models.CorrectAnswer{},
 		&Models.OpenAnswer{},
 		&Models.MatchPair{},
+		&Models.Grades{},
 	)
 }

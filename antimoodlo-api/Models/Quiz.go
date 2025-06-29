@@ -23,6 +23,8 @@ type Quiz struct {
 	EndDate      time.Time  `gorm:"column:enddate" json:"enddate"`
 	SubmitedDate *time.Time `gorm:"column:submiteddate" json:"submiteddate,omitempty"`
 	CourseID     uint       `gorm:"column:courseid" json:"courseid"`
+	Description  string     `gorm:"column:description" json:"description"`
+	UserID       uint       `gorm:"column:userid" json:"userid"`
 }
 
 func (Quiz) TableName() string {
@@ -35,6 +37,8 @@ type Question struct {
 	QuizID         uint   `gorm:"column:quizid" json:"quizid"`
 	QuestionText   string `gorm:"column:questiontext" json:"questiontext"`
 	QuestionTypeID uint   `gorm:"column:questiontypeid" json:"questiontypeid"`
+	ImageURL       string `gorm:"column:imageurl" json:"imageurl"`
+	Points         int    `gorm:"column:points" json:"points"`
 }
 
 func (Question) TableName() string {
@@ -90,4 +94,15 @@ type AllAnswersResponse struct {
 	CorrectAnswers []CorrectAnswer  `json:"correctAnswers"`
 	OpenAnswers    []OpenAnswer     `json:"openAnswers"`
 	MatchPairs     []MatchPair      `json:"matchPairs"`
+}
+
+type Grades struct {
+	ID     int     `gorm:"primaryKey;column:id" json:"id"`
+	UserId uint    `gorm:"column:userid" json:"userid"`
+	QuizID uint    `gorm:"column:quizid" json:"quizid"`
+	Points float32 `gorm:"column:points" json:"points"`
+}
+
+func (Grades) TableName() string {
+	return "grades"
 }

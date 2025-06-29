@@ -29,6 +29,17 @@ definitions:
       error:
         type: string
     type: object
+  Models.Grades:
+    properties:
+      id:
+        type: integer
+      points:
+        type: number
+      quizid:
+        type: integer
+      userid:
+        type: integer
+    type: object
   Models.MatchPair:
     properties:
       id:
@@ -51,6 +62,10 @@ definitions:
     properties:
       id:
         type: integer
+      imageurl:
+        type: string
+      points:
+        type: integer
       questiontext:
         type: string
       questiontypeid:
@@ -71,6 +86,8 @@ definitions:
     properties:
       courseid:
         type: integer
+      description:
+        type: string
       duration:
         type: integer
       enddate:
@@ -87,6 +104,8 @@ definitions:
         type: string
       title:
         type: string
+      userid:
+        type: integer
     type: object
   Models.User:
     properties:
@@ -102,6 +121,132 @@ definitions:
 info:
   contact: {}
 paths:
+  /answers/match/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Обновляет пару "лево-право" по ID
+      parameters:
+      - description: ID пары сопоставления
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Обновленная пара сопоставления
+        in: body
+        name: pair
+        required: true
+        schema:
+          $ref: '#/definitions/Models.MatchPair'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.MatchPair'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Обновить пару сопоставления
+      tags:
+      - answers
+  /answers/open/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Обновляет открытый ответ по ID
+      parameters:
+      - description: ID открытого ответа
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Обновленный открытый ответ
+        in: body
+        name: answer
+        required: true
+        schema:
+          $ref: '#/definitions/Models.OpenAnswer'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.OpenAnswer'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Обновить открытый ответ
+      tags:
+      - answers
+  /answers/options/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Обновляет текст варианта ответа по ID
+      parameters:
+      - description: ID варианта ответа
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Обновленный вариант ответа
+        in: body
+        name: option
+        required: true
+        schema:
+          $ref: '#/definitions/Models.QuestionOption'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.QuestionOption'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Обновить вариант ответа
+      tags:
+      - answers
   /blocks:
     get:
       description: Возвращает список всех блоков
@@ -318,6 +463,156 @@ paths:
       summary: Обновить курс
       tags:
       - Courses
+  /grades:
+    get:
+      description: Возвращает список всех записей из таблицы grades
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Models.Grades'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Получить все оценки
+      tags:
+      - grades
+    post:
+      consumes:
+      - application/json
+      description: Создает новую запись в таблице grades
+      parameters:
+      - description: Grade object
+        in: body
+        name: grade
+        required: true
+        schema:
+          $ref: '#/definitions/Models.Grades'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Models.Grades'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Создать оценку
+      tags:
+      - grades
+  /grades/{id}:
+    delete:
+      description: Удаляет запись в таблице grades по ID
+      parameters:
+      - description: Grade ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Удалить оценку
+      tags:
+      - grades
+    get:
+      description: Возвращает одну оценку по ID
+      parameters:
+      - description: Grade ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.Grades'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Получить оценку по ID
+      tags:
+      - grades
+    put:
+      consumes:
+      - application/json
+      description: Обновляет запись в таблице grades по ID
+      parameters:
+      - description: Grade ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Grade object
+        in: body
+        name: grade
+        required: true
+        schema:
+          $ref: '#/definitions/Models.Grades'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.Grades'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Обновить оценку
+      tags:
+      - grades
   /questions:
     get:
       produces:

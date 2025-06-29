@@ -1,4 +1,4 @@
-﻿package main
+package main
 
 import (
 	"antimoodlo/Handlers"
@@ -57,6 +57,16 @@ func main() {
 	r.POST("/questions/:id/answers/correct", Handlers.AddCorrectAnswer)
 	r.POST("/questions/:id/answers/open", Handlers.AddOpenAnswer)
 	r.POST("/questions/:id/answers/match", Handlers.AddMatchPair)
+	r.PUT("/answers/options/:id", Handlers.UpdateQuestionOption)
+	r.PUT("/answers/open/:id", Handlers.UpdateOpenAnswer)
+	r.PUT("/answers/match/:id", Handlers.UpdateMatchPair)
+
+	// --- Grades ---
+	r.POST("/grades", Handlers.CreateGrade)
+	r.GET("/grades", Handlers.GetGrades)
+	r.GET("/grades/:id", Handlers.GetGradeByID)
+	r.PUT("/grades/:id", Handlers.UpdateGrade)
+	r.DELETE("/grades/:id", Handlers.DeleteGrade)
 
 	// Start server
 	r.Run(":8080")
