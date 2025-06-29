@@ -1,4 +1,4 @@
-﻿package Handlers
+package Handlers
 
 import (
 	"antimoodlo/Models"
@@ -199,4 +199,116 @@ func GetAllAnswers(c *gin.Context) {
 		"openAnswers":    open,
 		"matchPairs":     match,
 	})
+}
+
+// UpdateMatchPair godoc
+// @Summary      Обновить пару сопоставления
+// @Description  Обновляет пару "лево-право" по ID
+// @Tags         answers
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int              true  "ID пары сопоставления"
+// @Param        pair  body      Models.MatchPair  true  "Обновленная пара сопоставления"
+// @Success      200   {object}  Models.MatchPair
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      404   {object}  map[string]interface{}
+// @Failure      500   {object}  map[string]interface{}
+// @Router       /answers/match/{id} [put]
+func UpdateMatchPair(c *gin.Context) {
+	var pair Models.MatchPair
+	pairID := parseUint(c.Param("id"))
+
+	if err := DB.DB.First(&pair, pairID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Match pair not found"})
+		return
+	}
+
+	var input Models.MatchPair
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	pair.LeftText = input.LeftText
+	pair.RightText = input.RightText
+	if err := DB.DB.Save(&pair).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update match pair"})
+		return
+	}
+
+	c.JSON(http.StatusOK, pair)
+}
+
+// UpdateOpenAnswer godoc
+// @Summary      Обновить открытый ответ
+// @Description  Обновляет открытый ответ по ID
+// @Tags         answers
+// @Accept       json
+// @Produce      json
+// @Param        id      path      int                 true  "ID открытого ответа"
+// @Param        answer  body      Models.OpenAnswer   true  "Обновленный открытый ответ"
+// @Success      200     {object}  Models.OpenAnswer
+// @Failure      400     {object}  map[string]interface{}
+// @Failure      404     {object}  map[string]interface{}
+// @Failure      500     {object}  map[string]interface{}
+// @Router       /answers/open/{id} [put]
+func UpdateOpenAnswer(c *gin.Context) {
+	var answer Models.OpenAnswer
+	answerID := parseUint(c.Param("id"))
+
+	if err := DB.DB.First(&answer, answerID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Open answer not found"})
+		return
+	}
+
+	var input Models.OpenAnswer
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	answer.AnswerText = input.AnswerText
+	if err := DB.DB.Save(&answer).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update open answer"})
+		return
+	}
+
+	c.JSON(http.StatusOK, answer)
+}
+
+// UpdateQuestionOption godoc
+// @Summary      Обновить вариант ответа
+// @Description  Обновляет текст варианта ответа по ID
+// @Tags         answers
+// @Accept       json
+// @Produce      json
+// @Param        id        path      int                     true  "ID варианта ответа"
+// @Param        option    body      Models.QuestionOption   true  "Обновленный вариант ответа"
+// @Success      200       {object}  Models.QuestionOption
+// @Failure      400       {object}  map[string]interface{}
+// @Failure      404       {object}  map[string]interface{}
+// @Failure      500       {object}  map[string]interface{}
+// @Router       /answers/options/{id} [put]
+func UpdateQuestionOption(c *gin.Context) {
+	var option Models.QuestionOption
+	optionID := parseUint(c.Param("id"))
+
+	if err := DB.DB.First(&option, optionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Option not found"})
+		return
+	}
+
+	var input Models.QuestionOption
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	option.OptionText = input.OptionText
+	if err := DB.DB.Save(&option).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update option"})
+		return
+	}
+
+	c.JSON(http.StatusOK, option)
 }
