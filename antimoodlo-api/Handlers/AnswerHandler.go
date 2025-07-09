@@ -10,7 +10,7 @@ import (
 // AddQuestionOption godoc
 // @Summary      Добавить вариант ответа
 // @Description  Добавляет один из вариантов ответа для вопроса (Multiple/Single Choice)
-// @Tags         answers
+// @Tags         Answers
 // @Accept       json
 // @Produce      json
 // @Param        id      path      int                     true  "ID вопроса"
@@ -46,7 +46,7 @@ func AddQuestionOption(c *gin.Context) {
 // AddCorrectAnswer godoc
 // @Summary      Добавить правильный ответ
 // @Description  Добавляет правильный вариант ответа к вопросу (по ID)
-// @Tags         answers
+// @Tags         Answers
 // @Accept       json
 // @Produce      json
 // @Param        id      path      int                    true  "ID вопроса"
@@ -82,7 +82,7 @@ func AddCorrectAnswer(c *gin.Context) {
 // AddOpenAnswer godoc
 // @Summary      Добавить открытый ответ
 // @Description  Добавляет открытый ответ для вопроса с открытой формой
-// @Tags         answers
+// @Tags         Answers
 // @Accept       json
 // @Produce      json
 // @Param        id      path      int                 true  "ID вопроса"
@@ -118,7 +118,7 @@ func AddOpenAnswer(c *gin.Context) {
 // AddMatchPair godoc
 // @Summary      Добавить пару для сопоставления
 // @Description  Добавляет пару "лево-право" для вопросов типа Match
-// @Tags         answers
+// @Tags         Answers
 // @Accept       json
 // @Produce      json
 // @Param        id    path      int              true  "ID вопроса"
@@ -154,7 +154,7 @@ func AddMatchPair(c *gin.Context) {
 // GetAllAnswers godoc
 // @Summary      Получить все ответы на вопрос
 // @Description  Возвращает все типы ответов (варианты, правильные, открытые, пары)
-// @Tags         answers
+// @Tags         Answers
 // @Produce      json
 // @Param        id   path      int  true  "ID вопроса"
 // @Success      200  {object}  map[string]interface{}
@@ -204,7 +204,7 @@ func GetAllAnswers(c *gin.Context) {
 // UpdateMatchPair godoc
 // @Summary      Обновить пару сопоставления
 // @Description  Обновляет пару "лево-право" по ID
-// @Tags         answers
+// @Tags         Answers
 // @Accept       json
 // @Produce      json
 // @Param        id    path      int              true  "ID пары сопоставления"
@@ -242,7 +242,7 @@ func UpdateMatchPair(c *gin.Context) {
 // UpdateOpenAnswer godoc
 // @Summary      Обновить открытый ответ
 // @Description  Обновляет открытый ответ по ID
-// @Tags         answers
+// @Tags         Answers
 // @Accept       json
 // @Produce      json
 // @Param        id      path      int                 true  "ID открытого ответа"
@@ -279,7 +279,7 @@ func UpdateOpenAnswer(c *gin.Context) {
 // UpdateQuestionOption godoc
 // @Summary      Обновить вариант ответа
 // @Description  Обновляет текст варианта ответа по ID
-// @Tags         answers
+// @Tags         Answers
 // @Accept       json
 // @Produce      json
 // @Param        id        path      int                     true  "ID варианта ответа"

@@ -1,59 +1,99 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import api from "../services/Api";
 import Timer from "./Timer";
 import MatchingQuestion from "./MatchingQuestions";
-import { FiX, FiCheck } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-// Преобразует ISO-строку в Date с учётом Москвы
-function parseMoscow(iso) {
-  if (iso instanceof Date || typeof iso === "number") return new Date(iso);
-  if (typeof iso !== "string") iso = String(iso);
-  if (/[+\\-]\\d{2}:\\d{2}$|Z$/.test(iso)) return new Date(iso);
-  const [date, time] = iso.split("T");
-  const [Y, M, D] = date.split("-").map(Number);
-  const [h, m, s = 0] = time.split(":").map(Number);
-  return new Date(Date.UTC(Y, M - 1, D, h - 3, m, s));
-}
-
-// Текущее время по Москве
-function getNowMoscow() {
-  const nowLocal = new Date();
-  const offsetLocalMin = nowLocal.getTimezoneOffset();
-  const offsetMoscowMin = 3 * 60;
-  const deltaMs = (offsetMoscowMin + offsetLocalMin) * 60_000;
-  return new Date(nowLocal.getTime() + deltaMs);
-}
-
 function Quiz({ quizConfig }) {
-  //объект, где хранятся все ответы пользователя: answers[q.id] 
-  const [answers, setAnswers]     = useState({});
-  //результат типо "Правильно x ответов из y"
-  const [result, setResult]       = useState(null);
-  //флаг, указывающий на вышедшее время
-  const [isTimeUp, setIsTimeUp]   = useState(false);
+  const { quizId: urlQuizId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  //база квиза
-  const { start, end, title, description, questions, duration } = quizConfig.quiz;
+  const [quizData, setQuizData] = useState(quizConfig || null);
+  const [answers, setAnswers] = useState({});
+  const [result, setResult] = useState(null);
+  const [isTimeUp, setIsTimeUp] = useState(false);
+  const [loading, setLoading] = useState(!quizConfig);
+  const [alreadyPassed, setAlreadyPassed] = useState(false);
 
-  //время и дедлайн
-  const startDate = parseMoscow(start);
-  const endDate   = parseMoscow(end);
-  const nowMoscow = getNowMoscow();
-  const expired   = nowMoscow > endDate || isTimeUp;
+  const questionRefs = useRef([]); //массив референсев на вопросы для навигации
 
-  
-  //compareResult() подсчитывает количество правильных ответов
- const computeResult = () => {
+  if (questionRefs.current.length !== (quizData?.quiz?.questions || quizData?.questions || []).length) {
+    questionRefs.current = Array((quizData?.quiz?.questions || quizData?.questions || []).length)
+      .fill()
+      .map((_, i) => questionRefs.current[i] || React.createRef());
+  }
+  useEffect(() => {
+    if (quizConfig) return; // Никаких запросов если передан quizConfig
+
+    const loadQuiz = async () => {
+      if (!urlQuizId) {
+        setQuizData(null);
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        const data = await api.loadQuizPreview(urlQuizId);
+        setQuizData(data);
+      } catch (err) {
+        console.error("Ошибка загрузки квиза:", err);
+        setQuizData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadQuiz();
+
+    const checkGrade = async () => {
+      if (!user?.userid || !urlQuizId) return;
+
+      try {
+        const res = await api.getGrades();
+        const existing = res.data.find(
+          g => g.userid === user.userid && g.quizid === Number(urlQuizId)
+        );
+        if (existing) setAlreadyPassed(true);
+      } catch (e) {
+        console.error("Ошибка при проверке пройденных квизов", e);
+      }
+    };
+
+    checkGrade();
+  }, [urlQuizId, quizConfig]);
+
+  if (loading) return <p>Загрузка квиза...</p>;
+  if (!quizData) return <p>Ошибка: квиз не найден.</p>;
+
+  if (alreadyPassed) {
+    return (
+      <div>
+        <h2>{quizData?.title || "Квиз"}</h2>
+        <p>Вы уже проходили этот квиз ✅</p>
+        <button onClick={() => navigate("/student")} className="action-btn">
+          Вернуться на главную
+        </button>
+      </div>
+    );
+  }
+
+  const { title, description, questions, duration, start, end } =
+    quizData.quiz || quizData;
+
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const now = new Date();
+  const expired = now > endDate || isTimeUp;
+
+  const computeResult = async () => {
   let totalPoints = 0;
   let earnedPoints = 0;
 
   questions.forEach(q => {
-    const pts = q.points || 1; // по умолчанию 1 балл
+    const pts = q.points || 1;
     const given = answers[q.id];
-
     let isCorrect = false;
 
     if (q.type === "single") {
@@ -77,55 +117,39 @@ function Quiz({ quizConfig }) {
   });
 
   setResult(`✅ Score: ${earnedPoints} / ${totalPoints} points`);
+
+  const quizIdToSend = urlQuizId || quizData?.id || quizData?.quiz?.id;
+
+  console.log("🟢 Попытка отправить оценку:", {
+    id: 0,
+    points: earnedPoints,
+    quizid: quizIdToSend,
+    userid: user?.userid
+  });
+
+  // Отправляем оценку только если:
+  // - пользователь существует
+  // - его роль = 1
+  // - есть корректный quizId
+  if (user && user.userrole === 1 && quizIdToSend) {
+    try {
+      await api.addGrade({
+        id: 0,
+        points: earnedPoints,
+        quizid: Number(quizIdToSend),
+        userid: user.userid
+      });
+      console.log("✅ Оценка успешно сохранена");
+    } catch (err) {
+      console.error("Ошибка при сохранении оценки:", err);
+    }
+  } else {
+    console.warn("⏭️ Оценка не отправлена: либо роль не 1, либо quizId отсутствует");
+  }
 };
 
 
-  //useEffect() используется для автоматической остановки квиза, если сгорел дедлайн
-  useEffect(() => {
-    if (result) return; //если уже посчитали — не продолжаем
-    const id = setInterval(() => {
-      if (getNowMoscow() > endDate) {
-        setIsTimeUp(true); 
-        computeResult();
-        clearInterval(id);
-      }
-    }, 500); //проверка каждые полсекунды
-    return () => clearInterval(id); 
-  }, [endDate, questions, answers, result]);
 
-  //useEffect() используется для автоматической остановки квиза, если закончилось время на таймере
-  useEffect(() => {
-    if (isTimeUp && !result) {
-      computeResult();
-    }
-  }, [isTimeUp, result]);
-
-  function getNowMoscow() {
-  const nowLocal = new Date();
-  const offsetLocalMin = nowLocal.getTimezoneOffset();     // в минутах (напр. –120 для CEST)
-  const offsetMoscowMin = 3 * 60;                          // Москва = UTC+3
-  // смещение до MSK = (offsetMoscow – (–offsetLocal)) 
-  //                  = offsetMoscow + offsetLocal
-  const deltaMs = (offsetMoscowMin + offsetLocalMin) * 60_000;
-  return new Date(nowLocal.getTime() + deltaMs);
-}
-
-  if (nowMoscow < startDate) {
-    return <>⏳ Квиз будет доступен с: {startDate.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}</>;
-  }
-
-  if (user?.userrole === 1 && nowMoscow > endDate) {
-    return <>⛔ Квиз больше недоступен. Дедлайн прошёл: {endDate.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}</>;
-  }
-  
-
-  /*handleChange() используется для обработки выбора ответов 
-  ***********************
-  ничего не делает если квиз закончился из-за isTimeUp()
-  ***********************
-  Если вопрос с множественным выбором (multiple), то добавляет или удаляет optionIndex из списка выбранных.
-  ***********************
-  Если вопрос с одиночным выбором (single), то просто устанавливает номер выбранного варианта. */
   const handleChange = (questionId, optionIndex, isMultiple) => {
     if (isTimeUp || result) return;
     setAnswers(prev => {
@@ -135,38 +159,85 @@ function Quiz({ quizConfig }) {
           ...prev,
           [questionId]: current.includes(optionIndex)
             ? current.filter(x => x !== optionIndex)
-            : [...current, optionIndex],
+            : [...current, optionIndex]
         };
       }
       return { ...prev, [questionId]: optionIndex };
     });
   };
 
-return (
-  <div>
-    <h2>{title}</h2>
-    <p>{description}</p>
+  return (
+    <div>
+      <h2>{title}</h2>
+      <p>{description}</p>
+      {/* Панель номеров вопросов */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "left",
+          marginBottom: 24,
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: 'rgb(30, 34, 77)',
+            borderRadius: '12px',
+            display: 'flex',
+            gap: '10px',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            padding: '0px 16px 16px 16px'
+          }}
+        >
+          {questions.map((_, i) => (
+            <button
+            key={i}
+            onClick={() =>
+              questionRefs.current[i]?.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+              })
+            }
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "12px",
+              backgroundColor: "white",
+              color: "#1e224d",
+              fontWeight: "bold",
+              fontSize: "16px",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+              lineHeight: 1,
+              verticalAlign: "middle"
+            }}
+          >
+            <span style={{ display: "block", lineHeight: 1 }}>{i + 1}</span>
+          </button>
+          ))}
+        </div>
+      </div>
+      {!result && !isTimeUp && (
+        <Timer duration={duration} onTimeUp={() => setIsTimeUp(true)} />
+      )}
 
-    {/* Показываем таймер до тех пор, пока нет результата */}
-    {!result && !isTimeUp && (
-      <Timer duration={duration} onTimeUp={() => setIsTimeUp(true)} />
-    )}
+      {result && (
+        <p style={{ fontWeight: "bold", marginTop: 12 }}>{result}</p>
+      )}
 
-    {/* Показываем результат, если он есть */}
-    {result && (
-      <p style={{ fontWeight: "bold", marginTop: 12 }}>{result}</p>
-    )}
-
-    {/* ВСЕГДА показываем вопросы */}
-    {questions.map((q, i) => {
+      {questions.map((q, i) => {
       if (q.type === "matching") {
         return (
-          <div key={q.id} style={{ marginBottom: 24 }}>
+          <div key={q.id} ref={questionRefs.current[i]} style={{ marginBottom: 24 }}>
             {/* заголовок + картинка */}
             <strong>
               {i + 1}. {q.question}{" "}
               <span style={{ fontWeight: "normal", fontSize: 14 }}>
-                ({q.points || 1} балл{(q.points || 1) !== 1 ? "ов" : ""})
+                ({q.points || 1} point{(q.points || 1) !== 1 ? "s" : ""})
               </span>
             </strong>
 
@@ -194,8 +265,11 @@ return (
 
       if (q.type === "open") {
         return (
-          <div key={q.id} style={{ marginBottom: 24 }}>
-            <strong>{i + 1}. {q.question}</strong>
+          <div key={q.id} ref={questionRefs.current[i]} style={{ marginBottom: 24 }}>
+            <strong>{i + 1}. {q.question}{" "}
+              <span style={{ fontWeight: "normal", fontSize: 14 }}>
+                ({q.points || 1} point{(q.points || 1) !== 1 ? "s" : ""})
+              </span></strong>
             {q.imageurl && (
               <img
                 src={q.imageurl}
@@ -246,8 +320,11 @@ return (
 
       const isMultiple = q.type === "multiple";
       return (
-        <div key={q.id} style={{ marginBottom: 16 }}>
-          <strong>{i + 1}. {q.question}</strong>
+        <div key={q.id} ref={questionRefs.current[i]} style={{ marginBottom: 16 }}>
+          <strong>{i + 1}. {q.question}{" "}
+              <span style={{ fontWeight: "normal", fontSize: 14 }}>
+                ({q.points || 1} point{(q.points || 1) !== 1 ? "s" : ""})
+              </span></strong>
           {q.imageurl && (
             <img
               src={q.imageurl}
@@ -310,36 +387,35 @@ return (
       );
     })}
 
-    {/* Кнопка "Проверить ответы" — только если еще не было ответа */}
-    {!result && (
-      <button
-        onClick={() => setIsTimeUp(true)}
-        style={{ marginTop: 12 }}
-      >
-        Submit
-      </button>
-    )}
+      
+      {!result && (
+        <button
+          onClick={computeResult}
+          style={{ marginTop: 12 }}
+        >
+          Submit
+        </button>
+      )}
 
-    {result && !!user?.userrole && user.userrole === 1 && (
-      <button
-        onClick={() => navigate("/student")}
-        style={{
-          marginTop: 24,
-          padding: "10px 20px",
-          fontSize: "16px",
-          borderRadius: "6px",
-          backgroundColor: "#007bff",
-          color: "white",
-          border: "none",
-          cursor: "pointer"
-        }}
-      >
-        Закрыть квиз
-      </button>
-    )}
-
-  </div>
-);
+      {result && !!user?.userrole && user.userrole === 1 && (
+        <button
+          onClick={() => navigate("/student")}
+          style={{
+            marginTop: 24,
+            padding: "10px 20px",
+            fontSize: "16px",
+            borderRadius: "6px",
+            backgroundColor: "#007bff",
+            color: "white",
+            border: "none",
+            cursor: "pointer"
+          }}
+        >
+          Закрыть квиз
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default Quiz;

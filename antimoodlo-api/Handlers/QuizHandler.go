@@ -5,6 +5,7 @@ import (
 	"antimoodlo/db"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
 )
 
 // @Summary Получить все тесты
@@ -23,12 +24,17 @@ func GetQuizzes(c *gin.Context) {
 // @Produce json
 // @Param id path int true "ID теста"
 // @Success 200 {object} Models.Quiz
+// @Failure 400 {object} Models.ErrorResponse
 // @Failure 404 {object} Models.ErrorResponse
 // @Router /quizzes/{id} [get]
 func GetQuizByID(c *gin.Context) {
-	id := parseUint(c.Param("id"))
-	var quiz Models.Quiz
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid quiz ID"})
+		return
+	}
 
+	var quiz Models.Quiz
 	if err := DB.DB.First(&quiz, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Quiz not found"})
 		return
@@ -52,13 +58,33 @@ func CreateQuiz(c *gin.Context) {
 		return
 	}
 
-	// Проверка внешних ключей
+	if quiz.Title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Title is required"})
+		return
+	}
+
+	if quiz.StartDate.IsZero() || quiz.EndDate.IsZero() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "StartDate and EndDate must be valid dates"})
+		return
+	}
+
+	if quiz.EndDate.Before(quiz.StartDate) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "EndDate must be after StartDate"})
+		return
+	}
+
 	if err := DB.DB.First(&Models.Course{}, quiz.CourseID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Course not found"})
 		return
 	}
+
 	if err := DB.DB.First(&Models.State{}, quiz.StateID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "State not found"})
+		return
+	}
+
+	if err := DB.DB.First(&Models.User{}, quiz.UserID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User not found"})
 		return
 	}
 
@@ -77,12 +103,17 @@ func CreateQuiz(c *gin.Context) {
 // @Param id path int true "ID теста"
 // @Param quiz body Models.Quiz true "Тест"
 // @Success 200 {object} Models.Quiz
+// @Failure 400 {object} Models.ErrorResponse
 // @Failure 404 {object} Models.ErrorResponse
 // @Router /quizzes/{id} [put]
 func UpdateQuiz(c *gin.Context) {
-	id := parseUint(c.Param("id"))
-	var quiz Models.Quiz
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid quiz ID"})
+		return
+	}
 
+	var quiz Models.Quiz
 	if err := DB.DB.First(&quiz, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Quiz not found"})
 		return
@@ -94,12 +125,33 @@ func UpdateQuiz(c *gin.Context) {
 		return
 	}
 
+	if input.Title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Title is required"})
+		return
+	}
+
+	if input.StartDate.IsZero() || input.EndDate.IsZero() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "StartDate and EndDate must be valid dates"})
+		return
+	}
+
+	if input.EndDate.Before(input.StartDate) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "EndDate must be after StartDate"})
+		return
+	}
+
 	if err := DB.DB.First(&Models.Course{}, input.CourseID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Course not found"})
 		return
 	}
+
 	if err := DB.DB.First(&Models.State{}, input.StateID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "State not found"})
+		return
+	}
+
+	if err := DB.DB.First(&Models.User{}, input.UserID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User not found"})
 		return
 	}
 
@@ -111,6 +163,8 @@ func UpdateQuiz(c *gin.Context) {
 	quiz.EndDate = input.EndDate
 	quiz.SubmitedDate = input.SubmitedDate
 	quiz.CourseID = input.CourseID
+	quiz.UserID = input.UserID
+	quiz.Description = input.Description
 
 	if err := DB.DB.Save(&quiz).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update quiz"})
@@ -125,12 +179,17 @@ func UpdateQuiz(c *gin.Context) {
 // @Produce json
 // @Param id path int true "ID теста"
 // @Success 204
+// @Failure 400 {object} Models.ErrorResponse
 // @Failure 404 {object} Models.ErrorResponse
 // @Router /quizzes/{id} [delete]
 func DeleteQuiz(c *gin.Context) {
-	id := parseUint(c.Param("id"))
-	var quiz Models.Quiz
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid quiz ID"})
+		return
+	}
 
+	var quiz Models.Quiz
 	if err := DB.DB.First(&quiz, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Quiz not found"})
 		return

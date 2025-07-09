@@ -1,0 +1,120 @@
+stages:
+  - lint
+  - staticcheck
+  - build
+  - report
+  - qa
+  - deploy-backend
+  - build-frontend
+  - deploy-frontend
+
+variables:
+  POSTGRES_DB: AntiMoodlo
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: 1111
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: 5432
+  GO111MODULE: "on"
+
+services:
+  - postgres:latest
+
+before_script:
+  - apt-get update && apt-get install -y make
+  - go mod download
+  - sleep 10
+
+lint:
+  stage: lint
+  image: golang:1.20
+  script:
+    - go install golang.org/x/lint/golint@latest
+    - golint ./...
+  only:
+    - main
+
+staticcheck:
+  stage: staticcheck
+  image: golang:1.20
+  script:
+    - go install honnef.co/go/tools/cmd/staticcheck@latest
+    - staticcheck ./...
+  only:
+    - main
+
+build-backend:
+  stage: build
+  image: golang:1.20
+  script:
+    - go build -o antimoodlo-api .
+  only:
+    - main
+  artifacts:
+    paths:
+      - antimoodlo-api
+
+report:
+  stage: report
+  image: golang:1.20
+  script:
+    - go test -v ./... -coverprofile=coverage.out
+    - go tool cover -func=coverage.out
+  artifacts:
+    paths:
+      - coverage.out
+  only:
+    - main
+
+qa:
+  stage: qa
+  image:
+    name: golangci/golangci-lint:v1.52
+    entrypoint: [""]
+  script:
+    - golangci-lint run ./...
+  only:
+    - main
+
+deploy-backend:
+  stage: deploy-backend
+  when: on_success
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H 37.220.83.144 >> ~/.ssh/known_hosts
+  script:
+    - scp antimoodlo-api root@37.220.83.144:/root/antimoodlo-api
+    - ssh root@37.220.83.144 "pkill antimoodlo-api || true && nohup /root/antimoodlo-api > antimoodlo.log 2>&1 &"
+  only:
+    - main
+
+build-frontend:
+  stage: build-frontend
+  image: node:18
+  script:
+    - npm install
+    - npm run build
+  artifacts:
+    paths:
+      - build
+  only:
+    - main
+
+deploy-frontend:
+  stage: deploy-frontend
+  when: on_success
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H 37.220.83.144 >> ~/.ssh/known_hosts
+  script:
+    - ssh root@37.220.83.144 "rm -rf /var/www/html/*"
+    - scp -r build/* root@37.220.83.144:/var/www/html/
+  only:
+    - main

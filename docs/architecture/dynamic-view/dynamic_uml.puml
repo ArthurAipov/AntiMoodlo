@@ -1,0 +1,17 @@
+@startuml
+actor Student
+
+Student -> Frontend: Submit quiz answers
+Frontend -> API: POST /api/quizzes/{id}/submit
+activate API
+
+API -> Database: Validate quiz exists
+Database --> API: Quiz data
+
+API -> Database: Insert submission record
+API -> Database: Insert answer records
+Database --> API: Insert confirmation
+
+API --> Frontend: 200 OK, Submission ID
+Frontend --> Student: Show confirmation screen
+@enduml

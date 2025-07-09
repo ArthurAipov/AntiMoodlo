@@ -1,4 +1,5 @@
 import axios from 'axios';
+//const axios = require('axios'); //чтоб тесты работали
 
 const API_BASE_URL = '/api';
 const end   = new Date("2025-07-20T13:00:00+03:00");
@@ -384,6 +385,35 @@ export default {
   },
 
   getUsers() {
-  return api.get('/users'); 
+    return api.get('/users'); 
+  },
+
+  getGrades() {
+    return api.get('/grades');
+  },
+
+  addGrade(gradeData) {
+    return api.post('/grades', gradeData);
+  },
+  
+  updateCorrectAnswer(questionId, data) {
+    return api.put(`/questions/${questionId}/answers/correct`,
+      data);
+  },
+
+  deleteAllCorrectAnswers(questionId) {
+    return api.delete(`/questions/${questionId}/answers/correct`);
+  },
+
+   deleteAllMatchPairs(questionId) {
+    return api.delete(`/questions/${questionId}/answers/match`);
+  },
+
+  deleteOpenAnswerByQuestion(questionId) {
+    return api.delete(`/questions/${questionId}/answers/open`);
+  },
+  deleteAllOptions(questionId) {
+    return api.delete(`/questions/${questionId}/options`);
   }
 };
+export { transformQuizData };

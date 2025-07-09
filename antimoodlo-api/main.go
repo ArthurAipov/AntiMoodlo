@@ -45,6 +45,7 @@ func main() {
 	r.PUT("/questions/:id", Handlers.UpdateQuestion)
 	r.DELETE("/questions/:id", Handlers.DeleteQuestion)
 	r.GET("/questions/:id/answers", Handlers.GetAllAnswers)
+	r.DELETE("/questions/quiz/:id", Handlers.DeleteAllQuestionsByQuizId)
 
 	// --- Blocks ---
 	r.GET("/blocks", Handlers.GetBlocks)
@@ -60,6 +61,11 @@ func main() {
 	r.PUT("/answers/options/:id", Handlers.UpdateQuestionOption)
 	r.PUT("/answers/open/:id", Handlers.UpdateOpenAnswer)
 	r.PUT("/answers/match/:id", Handlers.UpdateMatchPair)
+	r.DELETE("/questions/:id/answers/correct", Handlers.DeleteCorrectAnswer)
+	r.DELETE("/questions/:id/answers/match", Handlers.DeleteMatchPairs)
+	r.DELETE("/questions/:id/answers/open", Handlers.DeleteOpenAnswer)
+	r.DELETE("/questions/:id/options", Handlers.DeleteOptions)
+	r.PUT("/questions/:id/answers/correct", Handlers.UpdateCorrectAnswer)
 
 	// --- Grades ---
 	r.POST("/grades", Handlers.CreateGrade)
@@ -67,6 +73,7 @@ func main() {
 	r.GET("/grades/:id", Handlers.GetGradeByID)
 	r.PUT("/grades/:id", Handlers.UpdateGrade)
 	r.DELETE("/grades/:id", Handlers.DeleteGrade)
+	r.PUT("/grades/state/:id", Handlers.UpdateCompletedState)
 
 	// Start server
 	r.Run(":8080")

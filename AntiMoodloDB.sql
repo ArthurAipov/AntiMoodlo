@@ -117,6 +117,44 @@ ALTER TABLE public.course ALTER COLUMN courseid ADD GENERATED ALWAYS AS IDENTITY
 
 
 --
+-- Name: grades; Type: TABLE; Schema: public; Owner: arturaipov
+--
+
+CREATE TABLE public.grades (
+    id integer NOT NULL,
+    userid bigint,
+    quizid bigint,
+    points numeric,
+    completedstate integer,
+    completeddtate bigint
+);
+
+
+ALTER TABLE public.grades OWNER TO arturaipov;
+
+--
+-- Name: grades_id_seq; Type: SEQUENCE; Schema: public; Owner: arturaipov
+--
+
+CREATE SEQUENCE public.grades_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.grades_id_seq OWNER TO arturaipov;
+
+--
+-- Name: grades_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: arturaipov
+--
+
+ALTER SEQUENCE public.grades_id_seq OWNED BY public.grades.id;
+
+
+--
 -- Name: matchpairs; Type: TABLE; Schema: public; Owner: arturaipov
 --
 
@@ -170,8 +208,8 @@ ALTER TABLE public.openanswers OWNER TO arturaipov;
 
 CREATE TABLE public.questionoptions (
     id integer NOT NULL,
-    questionid integer NOT NULL,
-    optiontext text NOT NULL
+    questionid bigint,
+    optiontext text
 );
 
 
@@ -207,7 +245,11 @@ CREATE TABLE public.questions (
     id integer NOT NULL,
     quizid bigint,
     questiontext text,
-    questiontypeid integer NOT NULL
+    questiontypeid bigint,
+    imageurl text,
+    points bigint,
+    description text,
+    userid bigint
 );
 
 
@@ -280,9 +322,11 @@ CREATE TABLE public.quizzes (
     duration bigint,
     stateid bigint,
     startdate timestamp without time zone,
-    enddate timestamp without time zone NOT NULL,
+    enddate timestamp without time zone,
     submiteddate timestamp without time zone,
-    courseid integer NOT NULL
+    courseid bigint,
+    userid bigint,
+    description text
 );
 
 
@@ -466,6 +510,13 @@ ALTER TABLE ONLY public.correctanswers ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
+-- Name: grades id; Type: DEFAULT; Schema: public; Owner: arturaipov
+--
+
+ALTER TABLE ONLY public.grades ALTER COLUMN id SET DEFAULT nextval('public.grades_id_seq'::regclass);
+
+
+--
 -- Name: matchpairs id; Type: DEFAULT; Schema: public; Owner: arturaipov
 --
 
@@ -562,6 +613,15 @@ COPY public.course (courseid, title) FROM stdin;
 
 
 --
+-- Data for Name: grades; Type: TABLE DATA; Schema: public; Owner: arturaipov
+--
+
+COPY public.grades (id, userid, quizid, points, completedstate, completeddtate) FROM stdin;
+1	1	1	5	\N	1
+\.
+
+
+--
 -- Data for Name: matchpairs; Type: TABLE DATA; Schema: public; Owner: arturaipov
 --
 
@@ -599,10 +659,10 @@ COPY public.questionoptions (id, questionid, optiontext) FROM stdin;
 -- Data for Name: questions; Type: TABLE DATA; Schema: public; Owner: arturaipov
 --
 
-COPY public.questions (id, quizid, questiontext, questiontypeid) FROM stdin;
-1	1	What is 2 + 2?	1
-2	2	Choose all even numbers	2
-3	3	Explain Renaissance art.	3
+COPY public.questions (id, quizid, questiontext, questiontypeid, imageurl, points, description, userid) FROM stdin;
+1	1	What is 2 + 2?	1	\N	\N	\N	\N
+2	2	Choose all even numbers	2	\N	\N	\N	\N
+3	3	Explain Renaissance art.	3	\N	\N	\N	\N
 \.
 
 
@@ -614,6 +674,7 @@ COPY public.questiontypes (id, name) FROM stdin;
 1	Single Choice
 2	Multiple Choice
 3	Open Answer
+4	Match
 \.
 
 
@@ -621,10 +682,10 @@ COPY public.questiontypes (id, name) FROM stdin;
 -- Data for Name: quizzes; Type: TABLE DATA; Schema: public; Owner: arturaipov
 --
 
-COPY public.quizzes (id, title, maxgrade, duration, stateid, startdate, enddate, submiteddate, courseid) FROM stdin;
-1	Midterm Quiz	100	60	2	2025-06-13 02:44:29.536886	2025-06-20 02:44:29.536886	\N	1
-2	Final Quiz	100	90	2	2025-06-13 02:44:29.536886	2025-06-23 02:44:29.536886	\N	2
-3	Practice Quiz	50	30	1	2025-06-13 02:44:29.536886	2025-06-16 02:44:29.536886	\N	3
+COPY public.quizzes (id, title, maxgrade, duration, stateid, startdate, enddate, submiteddate, courseid, userid, description) FROM stdin;
+1	Midterm Quiz	100	60	2	2025-06-13 02:44:29.536886	2025-06-20 02:44:29.536886	\N	1	\N	\N
+2	Final Quiz	100	90	2	2025-06-13 02:44:29.536886	2025-06-23 02:44:29.536886	\N	2	\N	\N
+3	Practice Quiz	50	30	1	2025-06-13 02:44:29.536886	2025-06-16 02:44:29.536886	\N	3	\N	\N
 \.
 
 
@@ -690,7 +751,14 @@ SELECT pg_catalog.setval('public.correctanswers_id_seq', 3, true);
 -- Name: course_courseid_seq; Type: SEQUENCE SET; Schema: public; Owner: arturaipov
 --
 
-SELECT pg_catalog.setval('public.course_courseid_seq', 3, true);
+SELECT pg_catalog.setval('public.course_courseid_seq', 6, true);
+
+
+--
+-- Name: grades_id_seq; Type: SEQUENCE SET; Schema: public; Owner: arturaipov
+--
+
+SELECT pg_catalog.setval('public.grades_id_seq', 1, true);
 
 
 --
@@ -725,14 +793,14 @@ SELECT pg_catalog.setval('public.questiontypes_id_seq', 3, true);
 -- Name: quizzes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: arturaipov
 --
 
-SELECT pg_catalog.setval('public.quizzes_id_seq', 3, true);
+SELECT pg_catalog.setval('public.quizzes_id_seq', 12, true);
 
 
 --
 -- Name: states_id_seq; Type: SEQUENCE SET; Schema: public; Owner: arturaipov
 --
 
-SELECT pg_catalog.setval('public.states_id_seq', 3, true);
+SELECT pg_catalog.setval('public.states_id_seq', 6, true);
 
 
 --
@@ -753,7 +821,7 @@ SELECT pg_catalog.setval('public.userroles_roleid_seq', 3, true);
 -- Name: users_userid_seq; Type: SEQUENCE SET; Schema: public; Owner: arturaipov
 --
 
-SELECT pg_catalog.setval('public.users_userid_seq', 3, true);
+SELECT pg_catalog.setval('public.users_userid_seq', 6, true);
 
 
 --
@@ -778,6 +846,14 @@ ALTER TABLE ONLY public.correctanswers
 
 ALTER TABLE ONLY public.course
     ADD CONSTRAINT course_pkey PRIMARY KEY (courseid);
+
+
+--
+-- Name: grades grades_pkey; Type: CONSTRAINT; Schema: public; Owner: arturaipov
+--
+
+ALTER TABLE ONLY public.grades
+    ADD CONSTRAINT grades_pkey PRIMARY KEY (id);
 
 
 --
@@ -885,6 +961,14 @@ ALTER TABLE ONLY public.block
 
 
 --
+-- Name: usercourse fk_course; Type: FK CONSTRAINT; Schema: public; Owner: arturaipov
+--
+
+ALTER TABLE ONLY public.usercourse
+    ADD CONSTRAINT fk_course FOREIGN KEY (courseid) REFERENCES public.course(courseid);
+
+
+--
 -- Name: quizzes fk_course; Type: FK CONSTRAINT; Schema: public; Owner: arturaipov
 --
 
@@ -893,11 +977,27 @@ ALTER TABLE ONLY public.quizzes
 
 
 --
--- Name: usercourse fk_course; Type: FK CONSTRAINT; Schema: public; Owner: arturaipov
+-- Name: grades fk_grades_quiz; Type: FK CONSTRAINT; Schema: public; Owner: arturaipov
 --
 
-ALTER TABLE ONLY public.usercourse
-    ADD CONSTRAINT fk_course FOREIGN KEY (courseid) REFERENCES public.course(courseid);
+ALTER TABLE ONLY public.grades
+    ADD CONSTRAINT fk_grades_quiz FOREIGN KEY (quizid) REFERENCES public.quizzes(id) ON DELETE CASCADE;
+
+
+--
+-- Name: grades fk_grades_user; Type: FK CONSTRAINT; Schema: public; Owner: arturaipov
+--
+
+ALTER TABLE ONLY public.grades
+    ADD CONSTRAINT fk_grades_user FOREIGN KEY (userid) REFERENCES public.users(userid) ON DELETE CASCADE;
+
+
+--
+-- Name: quizzes fk_quizzes_user; Type: FK CONSTRAINT; Schema: public; Owner: arturaipov
+--
+
+ALTER TABLE ONLY public.quizzes
+    ADD CONSTRAINT fk_quizzes_user FOREIGN KEY (userid) REFERENCES public.users(userid) ON DELETE CASCADE;
 
 
 --

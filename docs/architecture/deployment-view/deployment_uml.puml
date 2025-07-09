@@ -1,0 +1,20 @@
+@startuml
+node "Client Browser" {
+  component "React Frontend"
+}
+
+node "Web Server" {
+  component "Nginx"
+}
+
+node "API Server" {
+  component "Go REST API"
+}
+
+database "PostgreSQL Database" as db
+
+"Client Browser" --> "Nginx": HTTP requests
+"Nginx" --> "Go REST API": Proxy API requests
+"Go REST API" --> db: SQL queries
+"Nginx" --> "Client Browser": Serve static assets
+@enduml

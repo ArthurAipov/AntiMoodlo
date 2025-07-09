@@ -13,6 +13,7 @@ function StudentPage() {
   const [isLoading, setIsLoading]     = useState(true);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [grades, setGrades] = useState([]);
 
   useEffect(() => {
     const load = async () => {
@@ -20,6 +21,12 @@ function StudentPage() {
         setIsLoading(true);
         const res = await api.getQuizzes();
         setQuizzes(res.data);
+
+        if (user?.userid) {
+          const gradeRes = await api.getGrades();
+          const myGrades = gradeRes.data.filter(g => g.userid === user.userid);
+          setGrades(myGrades);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -28,6 +35,7 @@ function StudentPage() {
     };
     load();
   }, []);
+  console.log("Квизы:", quizzes);
 
   return (
   <div className="quiz-creator-container">
@@ -35,7 +43,23 @@ function StudentPage() {
 
     <div className="main-content" style={{ marginLeft: sidebarWidth }}>
       <div className="header-container">
-        <h1 className="page-title">Добро пожаловать, {user?.userlogin}!</h1>
+        <h1 className="page-title">Welcome, {user?.userlogin}!</h1>
+      </div>
+
+      <div className="tab-container">
+        <button
+          className={`tab-button active`}
+          onClick={() => navigate("/student")}
+        >
+          Quizzes
+        </button>
+
+        <button
+          className="tab-button inactive"
+          onClick={() => navigate("/student/results")}
+        >
+          Grades
+        </button>
       </div>
 
       {/* Список квизов */}
@@ -51,6 +75,7 @@ function StudentPage() {
             const expired = now > end;
 
             const isStudent = user?.userrole === 1;
+            const alreadyPassed = grades.some(g => g.quizid === q.id);
 
             return (
               <div key={q.id} className="quiz-item">
@@ -58,15 +83,17 @@ function StudentPage() {
                 <p className="quiz-description">{q.description}</p>
 
                 {isStudent && expired ? (
-                  <p style={{ color: "red", fontWeight: "bold" }}>
-                    ⛔ Дедлайн прошёл: {end.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}
+                  <p style={{ color: "rgba(1, 5, 40, 0.8)", fontWeight: "bold" }}>
+                    The deadline has passed: {end.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}
                   </p>
+                ) : alreadyPassed ? (
+                  <p style={{ color: "green", fontWeight: "bold" }}>already Passed ✅</p>
                 ) : (
                   <button
                     className="action-btn start-quiz-btn"
                     onClick={() => navigate(`/student/quiz/${q.id}`)}
                   >
-                    Начать квиз
+                    Start quiz
                   </button>
                 )}
               </div>
@@ -75,9 +102,6 @@ function StudentPage() {
         </div>
       )}
 
-      <button onClick={logout} className="action-btn logout-btn">
-        Выйти
-      </button>
     </div>
   </div>
 );

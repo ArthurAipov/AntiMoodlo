@@ -29,8 +29,15 @@ definitions:
       error:
         type: string
     type: object
+  Models.GradeStateUpdate:
+    properties:
+      gradestate:
+        type: integer
+    type: object
   Models.Grades:
     properties:
+      gradestate:
+        type: integer
       id:
         type: integer
       points:
@@ -162,7 +169,7 @@ paths:
             type: object
       summary: Обновить пару сопоставления
       tags:
-      - answers
+      - Answers
   /answers/open/{id}:
     put:
       consumes:
@@ -204,7 +211,7 @@ paths:
             type: object
       summary: Обновить открытый ответ
       tags:
-      - answers
+      - Answers
   /answers/options/{id}:
     put:
       consumes:
@@ -246,7 +253,7 @@ paths:
             type: object
       summary: Обновить вариант ответа
       tags:
-      - answers
+      - Answers
   /blocks:
     get:
       description: Возвращает список всех блоков
@@ -261,7 +268,7 @@ paths:
             type: array
       summary: Получить все блоки
       tags:
-      - blocks
+      - Blocks
     post:
       consumes:
       - application/json
@@ -292,7 +299,7 @@ paths:
             type: object
       summary: Создать новый блок
       tags:
-      - blocks
+      - Blocks
   /blocks/{id}:
     delete:
       description: Удаляет блок по ID
@@ -317,7 +324,7 @@ paths:
             type: object
       summary: Удалить блок
       tags:
-      - blocks
+      - Blocks
     put:
       consumes:
       - application/json
@@ -358,7 +365,7 @@ paths:
             type: object
       summary: Обновить блок
       tags:
-      - blocks
+      - Blocks
   /courses:
     get:
       produces:
@@ -482,7 +489,7 @@ paths:
             type: object
       summary: Получить все оценки
       tags:
-      - grades
+      - Grades
     post:
       consumes:
       - application/json
@@ -513,7 +520,7 @@ paths:
             type: object
       summary: Создать оценку
       tags:
-      - grades
+      - Grades
   /grades/{id}:
     delete:
       description: Удаляет запись в таблице grades по ID
@@ -543,7 +550,7 @@ paths:
             type: object
       summary: Удалить оценку
       tags:
-      - grades
+      - Grades
     get:
       description: Возвращает одну оценку по ID
       parameters:
@@ -571,7 +578,7 @@ paths:
             type: object
       summary: Получить оценку по ID
       tags:
-      - grades
+      - Grades
     put:
       consumes:
       - application/json
@@ -612,7 +619,41 @@ paths:
             type: object
       summary: Обновить оценку
       tags:
-      - grades
+      - Grades
+  /grades/state/{id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID оценки
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Новое состояние
+        in: body
+        name: gradeState
+        required: true
+        schema:
+          $ref: '#/definitions/Models.GradeStateUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.Grades'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Обновить состояние оценки
+      tags:
+      - Grades
   /questions:
     get:
       produces:
@@ -700,8 +741,27 @@ paths:
             type: object
       summary: Получить все ответы на вопрос
       tags:
-      - answers
+      - Answers
   /questions/{id}/answers/correct:
+    delete:
+      parameters:
+      - description: ID вопроса
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Правильный ответ успешно удален
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Удалить правильный ответ для вопроса
+      tags:
+      - Answers
     post:
       consumes:
       - application/json
@@ -742,8 +802,64 @@ paths:
             type: object
       summary: Добавить правильный ответ
       tags:
-      - answers
+      - Answers
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID вопроса
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Правильный ответ
+        in: body
+        name: correctAnswer
+        required: true
+        schema:
+          $ref: '#/definitions/Models.CorrectAnswer'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Models.CorrectAnswer'
+        "400":
+          description: Некорректный запрос
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+        "404":
+          description: Ответ не найден
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Обновить правильный ответ для вопроса
+      tags:
+      - Answers
   /questions/{id}/answers/match:
+    delete:
+      parameters:
+      - description: ID вопроса
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Пары успешно удалены
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Удалить все пары сопоставления для вопроса
+      tags:
+      - Answers
     post:
       consumes:
       - application/json
@@ -784,8 +900,27 @@ paths:
             type: object
       summary: Добавить пару для сопоставления
       tags:
-      - answers
+      - Answers
   /questions/{id}/answers/open:
+    delete:
+      parameters:
+      - description: ID вопроса
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Открытый ответ успешно удален
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Удалить открытый ответ для вопроса
+      tags:
+      - Answers
     post:
       consumes:
       - application/json
@@ -826,8 +961,27 @@ paths:
             type: object
       summary: Добавить открытый ответ
       tags:
-      - answers
+      - Answers
   /questions/{id}/options:
+    delete:
+      parameters:
+      - description: ID вопроса
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Варианты ответа успешно удалены
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Удалить все варианты ответа для вопроса
+      tags:
+      - Answers
     post:
       consumes:
       - application/json
@@ -869,7 +1023,7 @@ paths:
             type: object
       summary: Добавить вариант ответа
       tags:
-      - answers
+      - Answers
   /quizzes:
     get:
       produces:
@@ -975,6 +1129,29 @@ paths:
       tags:
       - Quizzes
   /quizzes/{id}/questions:
+    delete:
+      parameters:
+      - description: ID теста
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Вопросы успешно удалены
+        "404":
+          description: Тест не найден
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/Models.ErrorResponse'
+      summary: Удалить все вопросы по ID теста
+      tags:
+      - Questions
     get:
       parameters:
       - description: ID теста

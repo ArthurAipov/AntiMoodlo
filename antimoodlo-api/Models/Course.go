@@ -1,6 +1,5 @@
 package Models
 
-// --- Статус квиза (Draft, Published, Closed) ---
 type State struct {
 	ID   uint   `gorm:"primaryKey;column:id" json:"id"`
 	Name string `gorm:"column:name" json:"name"`
@@ -10,7 +9,6 @@ func (State) TableName() string {
 	return "states"
 }
 
-// --- Курс ---
 type Course struct {
 	CourseID uint   `gorm:"primaryKey;column:courseid" json:"courseid"`
 	Title    string `gorm:"column:title" json:"title"`
@@ -20,7 +18,6 @@ func (Course) TableName() string {
 	return "course"
 }
 
-// --- Блок внутри курса ---
 type Block struct {
 	BlockID   uint   `gorm:"primaryKey;column:blockid" json:"blockid"`
 	BlockName string `gorm:"column:blockname" json:"blockname"`
@@ -31,7 +28,6 @@ func (Block) TableName() string {
 	return "block"
 }
 
-// --- Запись пользователя на курс ---
 type UserCourse struct {
 	UserCourseID uint    `gorm:"primaryKey;column:usercourseid" json:"usercourseid"`
 	UserID       uint    `gorm:"column:userid" json:"userid"`

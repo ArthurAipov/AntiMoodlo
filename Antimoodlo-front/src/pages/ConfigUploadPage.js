@@ -91,11 +91,29 @@ function ConfigUploadPage() {
   const [sidebarWidth, setSidebarWidth] = useState(60);
   const [activeTab, setActiveTab] = useState('upload');
   const [savedQuizzes, setSavedQuizzes] = useState([]);
+  const [selectedQuizResults, setSelectedQuizResults] = useState(null);
+  const [selectedQuizTitle, setSelectedQuizTitle] = useState("");
+  const [selectedResultsQuiz, setSelectedResultsQuiz] = useState(null);
+  const [grades, setGrades] = useState([]);
+  const [gradesLoading, setGradesLoading] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [quizTitle, setQuizTitle] = useState("");
   const [quizDescription, setQuizDescription] = useState("");
   const [questions, setQuestions] = useState([]);
-  const [yamlText, setYamlText] = useState("");
+  const [yamlText, setYamlText] = useState(() => {
+    return localStorage.getItem("autosaveYaml") || "";
+  });
+  useEffect(() => {
+  const timeout = setTimeout(() => {
+    if (yamlText.trim()) {
+      localStorage.setItem("autosaveYaml", yamlText);
+    }
+  }, 1000); // сохранить через 1 сек после изменений
+
+  return () => clearTimeout(timeout);
+}, [yamlText]);
+
   const [yamlHistory, setYamlHistory]   = useState([""]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [yamlError, setYamlError] = useState(null);
@@ -129,7 +147,16 @@ const toggleExpand = id => {
       try {
         setIsLoading(true);
         const response = await api.getQuizzes();
-        setSavedQuizzes(response.data);
+        const allQuizzes = response.data;
+
+        if (user.userrole === 3) {
+          // админ видит все квизы
+          setSavedQuizzes(allQuizzes);
+        } else if (user.userrole === 2) {
+          // преподаватель видит только свои
+          const myQuizzes = allQuizzes.filter(q => q.userid === user.userid);
+          setSavedQuizzes(myQuizzes);
+        }
       } catch (err) {
         console.error("Failed to load quizzes:", err);
         const saved = localStorage.getItem('savedQuizzes');
@@ -621,15 +648,21 @@ await api.updateQuizMeta(quizId, {
   let newQuestion;
 
   if (currentQuestion.type === "matching") {
-  newQuestion = {
-    ...base,
-    imageurl: currentQuestion.imageurl || undefined,
-    left_items:  currentQuestion.left_items.slice(),
-    right_items: currentQuestion.right_items.slice(),
-    correct_matches: currentQuestion.correct_matches,
-    points: currentQuestion.points 
-  };
-}
+    const allOptions = [
+      ...currentQuestion.left_items.filter(Boolean),
+      ...currentQuestion.right_items.filter(Boolean)
+    ];
+    newQuestion = {
+      ...base,
+      imageurl: currentQuestion.imageurl || undefined,
+      left_items: currentQuestion.left_items.slice(),
+      right_items: currentQuestion.right_items.slice(),
+      correct_matches: currentQuestion.correct_matches,
+      options: allOptions,  // 👈 добавляем options для совместимости
+      points: currentQuestion.points
+    };
+  }
+
  else if (currentQuestion.type === "single") {
     newQuestion = {
       ...base,
@@ -769,6 +802,26 @@ await api.updateQuizMeta(quizId, {
     }
     setShowModal(true);
   };
+  const handleShowResults = async (quizId, quizTitle) => {
+  try {
+    setIsLoading(true);
+    const { data } = await api.getGrades();
+
+    // фильтруем по quizId
+    const filtered = data.filter(g => g.quizid === quizId);
+
+    // сохраняем в state
+    setSelectedQuizResults(filtered);
+    setSelectedQuizTitle(quizTitle);
+  } catch (err) {
+    console.error("Ошибка при загрузке результатов:", err);
+    alert("Не удалось загрузить результаты.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
 
   const renderGUICreator = () => (
     <div className="editor-container">
@@ -806,7 +859,7 @@ await api.updateQuizMeta(quizId, {
         />
       </div>
 
-      <div className="editor-field"> {/*открытие квиза поле ввода*/}Add commentMore actions
+      <div className="editor-field"> {/*открытие квиза поле ввода*/}
         <label className="editor-label">Start Date & Time (МСК):</label>
         <input
           type="datetime-local"
@@ -1314,54 +1367,140 @@ quiz:
 `;
 
 
-  const renderSavedQuizzes = () => (
-  <div className="saved-quizzes-container">
-    <h2 className="section-title">Saved Quizzes</h2>
+  const renderSavedQuizzes = () => {
+  // Если выбраны результаты — показываем только их
+  if (selectedResultsQuiz) {
+    return (
+      <div className="results-container">
+        <h2 className="section-title">Results for: {selectedResultsQuiz.title}</h2>
+        {gradesLoading ? (
+          <p className="loading-text">Loading results...</p>
+        ) : grades.length === 0 ? (
+          <p className="no-results-text">There are no results for this test.</p>
+        ) : (
+          <table className="results-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Points</th>
+              </tr>
+            </thead>
+            <tbody>
+              {grades.map((g) => (
+                <tr key={g.id}>
+                  <td>{g.login}</td>
+                  <td>{g.points}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <button
+          onClick={() => setSelectedResultsQuiz(null)}
+          className="action-btn"
+          style={{ marginTop: "20px" }}
+        >
+          Back to Saved Quizzes
+        </button>
+      </div>
+    );
+  }
 
-    {isLoading ? (
-      <p className="loading-text">Loading quizzes...</p>
-    ) : savedQuizzes.length === 0 ? (
-      <p className="no-quizzes-text">No saved quizzes yet</p>
-    ) : (
-      <div className="quizzes-list">
-        {savedQuizzes.map((quiz) => (
-          <div
-            key={quiz.id}
-            onClick={() => loadSavedQuiz(quiz)}
-            className="quiz-item"
-          >
-            <div className="quiz-header">
-              <div>
-                <h3 className="quiz-title">{quiz.title}</h3>
-                <p className="quiz-description">{quiz.description}</p>
-                <p className="quiz-date">
-                  {new Date(quiz.createdAt).toLocaleString()}
-                </p>
-              </div>
-              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                <button
-                 onClick={e => {
-                handlePreviewSavedQuiz(quiz);
+  // Если результаты не выбраны — показываем список квизов
+  return (
+    <div className="saved-quizzes-container">
+      <h2 className="section-title">Saved Quizzes</h2>
+
+      {isLoading ? (
+        <p className="loading-text">Loading quizzes...</p>
+      ) : savedQuizzes.length === 0 ? (
+        <p className="no-quizzes-text">No saved quizzes yet</p>
+      ) : (
+        <div className="quizzes-list">
+          {savedQuizzes.map((quiz) => (
+             <div
+                key={quiz.id}
+                className="quiz-item"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  // 1) Переключаем вкладку на “Create”
+                  setActiveTab('create');
+                  // 2) Загружаем квиз в форму
+                  loadSavedQuiz(quiz);
                 }}
-                className="preview-quiz-btn"
-                >
-                <FiEye />
-                </button>
+              >
+              <div className="quiz-header">
+                <div>
+                  <h3 className="quiz-title">{quiz.title}</h3>
+                  <p className="quiz-description">{quiz.description}</p>
+                  <p className="quiz-date">
+                    {new Date(quiz.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePreviewSavedQuiz(quiz)}}
+                    className="preview-quiz-btn"
+                  >
+                    <FiEye />
+                  </button>
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      setSelectedResultsQuiz(quiz);
+                      setGradesLoading(true);
+                      try {
+                        // 1) Загружаем оценки
+                        const resGrades = await api.getGrades();
+                        const filtered = resGrades.data.filter((g) => g.quizid === quiz.id);
 
-                <button
-                  onClick={(e) => deleteSavedQuiz(quiz.id, e)}
-                  className="delete-quiz-btn"
-                >
-                  <FiTrash2 />
-                </button>
+                        // 2) Загружаем пользователей
+                        const resUsers = await api.getUsers();
+                        const users = resUsers.data;
+
+                        // 3) Делаем карту userid -> login
+                        const userMap = new Map(users.map(u => [u.userid, u.userlogin]));
+
+                        // 4) В каждый grade добавляем поле login
+                        const gradesWithLogin = filtered.map(g => ({
+                          ...g,
+                          login: userMap.get(g.userid) || `User #${g.userid}`
+                        }));
+
+                        // 5) Сохраняем
+                        setGrades(gradesWithLogin);
+                      } catch (err) {
+                        console.error(err);
+                        setGrades([]);
+                      } finally {
+                        setGradesLoading(false);
+                      }
+                    }}
+                    className="results-quiz-btn"
+                  >
+                    Results
+                  </button>
+                   <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteSavedQuiz(quiz.id, e)}}
+                    className="delete-quiz-btn"
+                  >
+                    <FiTrash2 />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-);
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 
 
   const renderUploadTab = () => (

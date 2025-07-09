@@ -25,7 +25,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "answers"
+                    "Answers"
                 ],
                 "summary": "Обновить пару сопоставления",
                 "parameters": [
@@ -87,7 +87,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "answers"
+                    "Answers"
                 ],
                 "summary": "Обновить открытый ответ",
                 "parameters": [
@@ -149,7 +149,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "answers"
+                    "Answers"
                 ],
                 "summary": "Обновить вариант ответа",
                 "parameters": [
@@ -208,7 +208,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "blocks"
+                    "Blocks"
                 ],
                 "summary": "Получить все блоки",
                 "responses": {
@@ -232,7 +232,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "blocks"
+                    "Blocks"
                 ],
                 "summary": "Создать новый блок",
                 "parameters": [
@@ -280,7 +280,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "blocks"
+                    "Blocks"
                 ],
                 "summary": "Обновить блок",
                 "parameters": [
@@ -334,7 +334,7 @@ const docTemplate = `{
             "delete": {
                 "description": "Удаляет блок по ID",
                 "tags": [
-                    "blocks"
+                    "Blocks"
                 ],
                 "summary": "Удалить блок",
                 "parameters": [
@@ -534,7 +534,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "grades"
+                    "Grades"
                 ],
                 "summary": "Получить все оценки",
                 "responses": {
@@ -565,7 +565,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "grades"
+                    "Grades"
                 ],
                 "summary": "Создать оценку",
                 "parameters": [
@@ -603,6 +603,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/grades/state/{id}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Grades"
+                ],
+                "summary": "Обновить состояние оценки",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID оценки",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Новое состояние",
+                        "name": "gradeState",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Models.GradeStateUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Models.Grades"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/grades/{id}": {
             "get": {
                 "description": "Возвращает одну оценку по ID",
@@ -610,7 +662,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "grades"
+                    "Grades"
                 ],
                 "summary": "Получить оценку по ID",
                 "parameters": [
@@ -654,7 +706,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "grades"
+                    "Grades"
                 ],
                 "summary": "Обновить оценку",
                 "parameters": [
@@ -711,7 +763,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "grades"
+                    "Grades"
                 ],
                 "summary": "Удалить оценку",
                 "parameters": [
@@ -852,7 +904,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "answers"
+                    "Answers"
                 ],
                 "summary": "Получить все ответы на вопрос",
                 "parameters": [
@@ -883,6 +935,62 @@ const docTemplate = `{
             }
         },
         "/questions/{id}/answers/correct": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Answers"
+                ],
+                "summary": "Обновить правильный ответ для вопроса",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID вопроса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Правильный ответ",
+                        "name": "correctAnswer",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Models.CorrectAnswer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Models.CorrectAnswer"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Ответ не найден",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Добавляет правильный вариант ответа к вопросу (по ID)",
                 "consumes": [
@@ -892,7 +1000,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "answers"
+                    "Answers"
                 ],
                 "summary": "Добавить правильный ответ",
                 "parameters": [
@@ -942,6 +1050,35 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Answers"
+                ],
+                "summary": "Удалить правильный ответ для вопроса",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID вопроса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Правильный ответ успешно удален"
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/questions/{id}/answers/match": {
@@ -954,7 +1091,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "answers"
+                    "Answers"
                 ],
                 "summary": "Добавить пару для сопоставления",
                 "parameters": [
@@ -1004,6 +1141,35 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Answers"
+                ],
+                "summary": "Удалить все пары сопоставления для вопроса",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID вопроса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Пары успешно удалены"
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/questions/{id}/answers/open": {
@@ -1016,7 +1182,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "answers"
+                    "Answers"
                 ],
                 "summary": "Добавить открытый ответ",
                 "parameters": [
@@ -1066,6 +1232,35 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Answers"
+                ],
+                "summary": "Удалить открытый ответ для вопроса",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID вопроса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Открытый ответ успешно удален"
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/questions/{id}/options": {
@@ -1078,7 +1273,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "answers"
+                    "Answers"
                 ],
                 "summary": "Добавить вариант ответа",
                 "parameters": [
@@ -1125,6 +1320,35 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Answers"
+                ],
+                "summary": "Удалить все варианты ответа для вопроса",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID вопроса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Варианты ответа успешно удалены"
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
                         }
                     }
                 }
@@ -1364,6 +1588,41 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Questions"
+                ],
+                "summary": "Удалить все вопросы по ID теста",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID теста",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Вопросы успешно удалены"
+                    },
+                    "404": {
+                        "description": "Тест не найден",
+                        "schema": {
+                            "$ref": "#/definitions/Models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/Models.ErrorResponse"
                         }
@@ -1614,9 +1873,20 @@ const docTemplate = `{
                 }
             }
         },
+        "Models.GradeStateUpdate": {
+            "type": "object",
+            "properties": {
+                "gradestate": {
+                    "type": "integer"
+                }
+            }
+        },
         "Models.Grades": {
             "type": "object",
             "properties": {
+                "gradestate": {
+                    "type": "integer"
+                },
                 "id": {
                     "type": "integer"
                 },

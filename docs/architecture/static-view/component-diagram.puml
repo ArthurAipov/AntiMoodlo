@@ -1,0 +1,18 @@
+@startuml
+package "Frontend (React)" {
+  [React App]
+}
+
+package "Backend (Go API)" {
+  [HTTP Handlers]
+  [Business Logic]
+  [DB Access]
+}
+
+database "PostgreSQL" as DB
+
+[React App] --> [HTTP Handlers] : REST API (JSON)
+[HTTP Handlers] --> [Business Logic]
+[Business Logic] --> [DB Access]
+[DB Access] --> DB
+@enduml

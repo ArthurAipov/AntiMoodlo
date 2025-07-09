@@ -10,7 +10,7 @@ import (
 // GetBlocks godoc
 // @Summary      Получить все блоки
 // @Description  Возвращает список всех блоков
-// @Tags         blocks
+// @Tags         Blocks
 // @Produce      json
 // @Success      200  {array}   Models.Block
 // @Router       /blocks [get]
@@ -23,7 +23,7 @@ func GetBlocks(c *gin.Context) {
 // CreateBlock godoc
 // @Summary      Создать новый блок
 // @Description  Создает блок, привязанный к курсу
-// @Tags         blocks
+// @Tags         Blocks
 // @Accept       json
 // @Produce      json
 // @Param        block  body      Models.Block  true  "Новый блок"
@@ -54,7 +54,7 @@ func CreateBlock(c *gin.Context) {
 // UpdateBlock godoc
 // @Summary      Обновить блок
 // @Description  Обновляет имя блока и ID курса
-// @Tags         blocks
+// @Tags         Blocks
 // @Accept       json
 // @Produce      json
 // @Param        id     path      int           true  "ID блока"
@@ -98,7 +98,7 @@ func UpdateBlock(c *gin.Context) {
 // DeleteBlock godoc
 // @Summary      Удалить блок
 // @Description  Удаляет блок по ID
-// @Tags         blocks
+// @Tags         Blocks
 // @Param        id   path      int  true  "ID блока"
 // @Success      204  "No Content"
 // @Failure      404  {object}  map[string]interface{}

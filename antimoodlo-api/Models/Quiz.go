@@ -2,7 +2,6 @@ package Models
 
 import "time"
 
-// --- Тип вопроса ---
 type QuestionType struct {
 	ID   uint   `gorm:"primaryKey;column:id" json:"id"`
 	Name string `gorm:"column:name" json:"name"`
@@ -12,10 +11,9 @@ func (QuestionType) TableName() string {
 	return "questiontypes"
 }
 
-// --- Тест (Quiz) ---
 type Quiz struct {
 	ID           uint       `gorm:"primaryKey;column:id" json:"id"`
-	Title        string     `gorm:"column:title" json:"title"`
+	Title        string     `gorm:"column:title" json:"title" binding:"required"`
 	MaxGrade     int        `gorm:"column:maxgrade" json:"maxgrade"`
 	Duration     int        `gorm:"column:duration" json:"duration"`
 	StateID      uint       `gorm:"column:stateid" json:"stateid"`
@@ -31,7 +29,6 @@ func (Quiz) TableName() string {
 	return "quizzes"
 }
 
-// --- Вопрос ---
 type Question struct {
 	ID             uint   `gorm:"primaryKey;column:id" json:"id"`
 	QuizID         uint   `gorm:"column:quizid" json:"quizid"`
@@ -45,7 +42,6 @@ func (Question) TableName() string {
 	return "questions"
 }
 
-// --- Варианты ответа ---
 type QuestionOption struct {
 	ID         uint   `gorm:"primaryKey;column:id" json:"id"`
 	QuestionID uint   `gorm:"column:questionid" json:"questionid"`
@@ -56,7 +52,6 @@ func (QuestionOption) TableName() string {
 	return "questionoptions"
 }
 
-// --- Правильный ответ ---
 type CorrectAnswer struct {
 	ID         uint `gorm:"primaryKey;column:id" json:"id"`
 	QuestionID uint `gorm:"column:questionid" json:"questionid"`
@@ -67,7 +62,6 @@ func (CorrectAnswer) TableName() string {
 	return "correctanswers"
 }
 
-// --- Открытый ответ ---
 type OpenAnswer struct {
 	QuestionID uint   `gorm:"primaryKey;column:questionid" json:"questionid"`
 	AnswerText string `gorm:"column:answertext" json:"answertext"`
@@ -77,7 +71,6 @@ func (OpenAnswer) TableName() string {
 	return "openanswers"
 }
 
-// --- Сопоставление пар ---
 type MatchPair struct {
 	ID         uint   `gorm:"primaryKey;column:id" json:"id"`
 	QuestionID uint   `gorm:"column:questionid" json:"questionid"`
@@ -97,12 +90,17 @@ type AllAnswersResponse struct {
 }
 
 type Grades struct {
-	ID     int     `gorm:"primaryKey;column:id" json:"id"`
-	UserId uint    `gorm:"column:userid" json:"userid"`
-	QuizID uint    `gorm:"column:quizid" json:"quizid"`
-	Points float32 `gorm:"column:points" json:"points"`
+	ID         int     `gorm:"primaryKey;column:id" json:"id"`
+	UserId     uint    `gorm:"column:userid" json:"userid"`
+	QuizID     uint    `gorm:"column:quizid" json:"quizid"`
+	Points     float32 `gorm:"column:points" json:"points"`
+	GradeState int     `gorm:"column:completedstate" json:"gradestate"`
 }
 
 func (Grades) TableName() string {
 	return "grades"
+}
+
+type GradeStateUpdate struct {
+	GradeState int `json:"gradestate"`
 }
